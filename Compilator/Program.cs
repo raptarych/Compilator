@@ -8,6 +8,11 @@ namespace Compilator
 {
     class Program
     {
+        public const int IDENTIFIER = 1;
+        public const int KEYWORD = 2;
+        public const int OPERATION = 3;
+        public const int SEPARATOR = 4;
+        public const int CONSTANT = 5;
         static void LexicalAnalysis(string inputString)
         {
             /*
@@ -30,27 +35,29 @@ namespace Compilator
                 if (lexemString.Length == 0) continue;
                 if (lexemString[0] >= '0' && lexemString[0] <= '9')
                 {
-                    lexems.Add(new Lexem() { Key = 5, Value = (int)lexemString[0]});
+                    int lexemValue;
+                    int.TryParse(lexemString, out lexemValue);
+                    lexems.Add(new Lexem() { Key = CONSTANT, Value = lexemValue});
                     continue;
                 }
                 if (Lexems.Identifiers.Contains(lexemString))
                 {
-                    lexems.Add(new Lexem() { Key = 1, Value = (int)lexemString[0] });
+                    lexems.Add(new Lexem() { Key = IDENTIFIER, Value = (int)lexemString[0] });
                     continue;
                 }
                 if (Lexems.Keywords.Contains(lexemString))
                 {
-                    lexems.Add(new Lexem() { Key = 2, Value = Lexems.Keywords.IndexOf(lexemString) });
+                    lexems.Add(new Lexem() { Key = KEYWORD, Value = Lexems.Keywords.IndexOf(lexemString) });
                     continue;
                 }
                 if (Lexems.Operations.Contains(lexemString))
                 {
-                    lexems.Add(new Lexem() { Key = 3, Value = (int) lexemString[0] });
+                    lexems.Add(new Lexem() { Key = OPERATION, Value = (int) lexemString[0] });
                     continue;
                 }
                 if (Lexems.Separators.Contains(lexemString))
                 {
-                    lexems.Add(new Lexem() { Key = 4, Value = (int) lexemString[0] });
+                    lexems.Add(new Lexem() { Key = SEPARATOR, Value = (int) lexemString[0] });
                 }
             }
 

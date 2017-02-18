@@ -15,11 +15,12 @@ namespace Compilator
         public void Start()
         {
             Console.WriteLine("Enter command:");
-            while (InputString != "exit")
+            while (true)
             {
+                if (InputString == "exit") break;
                 Console.Write(">");
                 InputString = Console.ReadLine();
-                if (InputString != "exit") InputFunc(InputString);
+                InputFunc(InputString);
             }
         }
 
