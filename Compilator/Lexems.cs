@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Compilator
 {
-    public class Lexem
+    class Lexem
     {
         public int Key { get; set; }
         public int Value { get; set; }
@@ -18,7 +18,6 @@ namespace Compilator
             "int",
             "double",
             "sign",
-            "char",
             "float"
         };
         public static readonly List<string> Operations = new List<string>()
@@ -27,7 +26,13 @@ namespace Compilator
             "+",
             "-",
             "*",
-            "/"
+            "/",
+            "++",
+            "--",
+            "+=",
+            "-=",
+            "*=",
+            "/="
         };
         public static readonly List<string> Identifiers = new List<string>()
         {
@@ -38,9 +43,15 @@ namespace Compilator
             "foo",
             "bar"
         };
-        public static readonly List<string> Separators = new List<string>()
+        public static readonly List<char> Separators = new List<char>
         {
-            ";"
+            ';',
+            '(',
+            ')',
+            '{',
+            '}',
+            ']',
+            '['
         };
 
     }
