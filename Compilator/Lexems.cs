@@ -9,16 +9,29 @@ namespace Compilator
     class Lexem
     {
         public int Key { get; set; }
-        public int Value { get; set; }
+        public byte Value { get; set; }
     }
     class Lexems
     {
+        //TODO: разделение статических и динамических лексем в разные классы
         public static readonly List<string> Keywords = new List<string>()
         {
             "int",
             "double",
             "sign",
-            "float"
+            "float",
+            "new",
+            "public",
+            "static",
+            "readonly",
+            "class",
+            "for",
+            "while",
+            "if",
+            "then",
+            "else",
+            "foreach"
+
         };
         public static readonly List<string> Operations = new List<string>()
         {
@@ -51,7 +64,9 @@ namespace Compilator
             '{',
             '}',
             ']',
-            '['
+            '[',
+            '.',
+            ','
         };
 
     }

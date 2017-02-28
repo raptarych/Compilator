@@ -8,14 +8,15 @@ namespace Compilator
 {
     class Program
     {
-        public const int IDENTIFIER = 1;
-        public const int KEYWORD = 2;
-        public const int OPERATION = 3;
-        public const int SEPARATOR = 4;
-        public const int CONSTANT = 5;
+        private const int UNKNOWN_LEXEM = -1;
+        private const int IDENTIFIER = 1;
+        private const int KEYWORD = 2;
+        private const int OPERATION = 3;
+        private const int SEPARATOR = 4;
+        private const int CONSTANT = 5;
         static void LexicalAnalysis(string inputString)
         {
-            var lexems = new List<Lexem>();
+            List<Lexem> lexems = new List<Lexem>();
 
             //1. Разделение лексем
 
@@ -23,14 +24,14 @@ namespace Compilator
             //var rawLexems = inputString.Split(' ');
 
             //Сложно:
-            var rawLexems = new List<string>();
-            var currentLexem = "";
-            var currentLexemIsText = true;
+            List<string> rawLexems = new List<string>();
+            string currentLexem = "";
+            bool currentLexemIsText = true;
             while (inputString.Length > 0)
             {
-                var currentChar = inputString[0];
-                var sCurrentChar = currentChar.ToString();
-                var isText = !(Lexems.Separators.Contains(currentChar) || 
+                char currentChar = inputString[0];
+                string sCurrentChar = currentChar.ToString();
+                bool isText = !(Lexems.Separators.Contains(currentChar) || 
                     Lexems.Operations.Contains(sCurrentChar));
 
                 if (currentChar == ' ')
@@ -63,49 +64,51 @@ namespace Compilator
                 inputString = inputString.Substring(1, inputString.Length - 1);
             }
             if (currentLexem.Length > 0) rawLexems.Add(currentLexem);
-            Console.Write($"\nRaw lexems: {string.Join(",", rawLexems.Select(lexem => $"\"{lexem}\""))}\n");
+            Console.Write($"\nRaw lexems: \t\t\t{string.Join(",", rawLexems.Select(lexem => $"[{lexem}]"))}\n");
 
             //2. Разбор лексем
             foreach (var lexemString in rawLexems)
             {
                 if (lexemString.Length == 0) continue;
-                var firstChar = lexemString[0];
+                char firstChar = lexemString[0];
                 if (firstChar >= '0' && firstChar <= '9')
                 {
                     int lexemValue;
                     int.TryParse(lexemString, out lexemValue);
-                    lexems.Add(new Lexem() { Key = CONSTANT, Value = lexemValue});
+                    lexems.Add(new Lexem() { Key = CONSTANT, Value = (byte) lexemValue});
                     continue;
                 }
                 if (Lexems.Separators.Contains(firstChar))
                 {
-                    lexems.Add(new Lexem() { Key = SEPARATOR, Value = (int)lexemString[0] });
+                    lexems.Add(new Lexem() { Key = SEPARATOR, Value = (byte) lexemString[0] });
+                    continue;
                 }
                 if (Lexems.Identifiers.Contains(lexemString))
                 {
-                    lexems.Add(new Lexem() { Key = IDENTIFIER, Value = (int)lexemString[0] });
+                    lexems.Add(new Lexem() { Key = IDENTIFIER, Value = (byte) lexemString[0] });
                     continue;
                 }
                 if (Lexems.Keywords.Contains(lexemString))
                 {
-                    lexems.Add(new Lexem() { Key = KEYWORD, Value = Lexems.Keywords.IndexOf(lexemString) });
+                    lexems.Add(new Lexem() { Key = KEYWORD, Value = (byte) Lexems.Keywords.IndexOf(lexemString) });
                     continue;
                 }
                 if (Lexems.Operations.Contains(lexemString))
                 {
-                    lexems.Add(new Lexem() { Key = OPERATION, Value = (int) lexemString[0] });
+                    lexems.Add(new Lexem() { Key = OPERATION, Value = (byte) lexemString[0] });
                     continue;
                 }
+                lexems.Add(new Lexem() { Key = UNKNOWN_LEXEM, Value = 0 });
             }
 
-            //Формат для вывода
-            var outputString = $"Lexical analysis output: {string.Join("",lexems.Select(lexem => $"({lexem.Key},{lexem.Value})"))}";
+            //3. Формат для вывода
+            string outputString = $"Lexical analysis output:\t{string.Join("",lexems.Select(lexem => $"({lexem.Key},{lexem.Value})"))}";
             Console.WriteLine(outputString);
 
         }
         static void Main(string[] args)
         {
-            var conWorker = new ConWorker();
+            ConWorker conWorker = new ConWorker();
             conWorker.AddHandler(LexicalAnalysis);
             conWorker.Start();
         }
