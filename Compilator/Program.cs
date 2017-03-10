@@ -24,47 +24,9 @@ namespace Compilator
             //var rawLexems = inputString.Split(' ');
 
             //Сложно:
-            List<string> rawLexems = new List<string>();
-            string currentLexem = "";
-            bool currentLexemIsText = true;
-            while (inputString.Length > 0)
-            {
-                char currentChar = inputString[0];
-                string sCurrentChar = currentChar.ToString();
-                bool isText = !(Lexems.Separators.Contains(currentChar) || 
-                    Lexems.Operations.Contains(sCurrentChar));
-
-                if (currentChar == ' ')
-                {
-                    if (currentLexem.Length > 0) rawLexems.Add(currentLexem);
-                    inputString = inputString.Substring(1, inputString.Length - 1);
-                    currentLexem = "";
-                    continue;
-                }
-
-                if (currentLexem.Length == 0 || isText == currentLexemIsText)
-                {
-                    if (Lexems.Separators.Contains(currentChar))
-                    {
-                        if (currentLexem.Length > 0) rawLexems.Add(currentLexem);
-                        rawLexems.Add(sCurrentChar);
-                        inputString = inputString.Substring(1, inputString.Length - 1);
-                        currentLexem = "";
-                        continue;
-                    }
-                    currentLexem += currentChar;
-                    currentLexemIsText = isText;
-                    inputString = inputString.Substring(1, inputString.Length - 1);
-                    continue;
-                }
-
-                rawLexems.Add(currentLexem);
-                currentLexemIsText = isText;
-                currentLexem = currentChar.ToString().Trim();
-                inputString = inputString.Substring(1, inputString.Length - 1);
-            }
-            if (currentLexem.Length > 0) rawLexems.Add(currentLexem);
-            Console.Write($"\nRaw lexems: \t\t\t{string.Join(",", rawLexems.Select(lexem => $"[{lexem}]"))}\n");
+            var lexemSplitter = new LexicalSplitter();
+            List<string> rawLexems = lexemSplitter.Parse(inputString);
+            Console.Write($"\nRaw lexems: {string.Join(",",rawLexems.Select(lexem => $"[{lexem}]"))}\n");
 
             //2. Разбор лексем
             foreach (var lexemString in rawLexems)
