@@ -8,9 +8,8 @@ namespace Compilator
 {
     class ConWorker
     {
-        protected string InputString { get; set; }
+        private string InputString { get; set; }
         public delegate void ProcessInput(string input);
-
         private ProcessInput InputFunc;
         public void Start()
         {
