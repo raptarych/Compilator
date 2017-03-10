@@ -13,7 +13,6 @@ namespace Compilator
     }
     class Lexems
     {
-        //TODO: разделение статических и динамических лексем в разные классы
         public static readonly List<string> Keywords = new List<string>()
         {
             "int",
@@ -30,8 +29,10 @@ namespace Compilator
             "if",
             "then",
             "else",
-            "foreach"
-
+            "foreach",
+            "return",
+            "get",
+            "set"
         };
         public static readonly List<string> Operations = new List<string>()
         {
@@ -47,15 +48,9 @@ namespace Compilator
             "*=",
             "/="
         };
-        public static readonly List<string> Identifiers = new List<string>()
-        {
-            "a",
-            "b",
-            "c",
-            "test",
-            "foo",
-            "bar"
-        };
+
+        public static List<string> Identifiers = new List<string>();
+        public static List<object> Constants = new List<object>();
         public static readonly List<char> Separators = new List<char>
         {
             ';',
