@@ -23,7 +23,7 @@ namespace Compilator
 
         private LexemCharType GetType(char ch)
         {
-            if (Lexems.Separators.Contains(ch)) return LexemCharType.Separators;
+            if (Lexems.Separators.Any(oper => oper.StartsWith(ch.ToString()))) return LexemCharType.Separators;
             if (Lexems.Operations.Any(oper => oper.StartsWith(ch.ToString()))) return LexemCharType.Operations;
             return LexemCharType.Text;
         }
@@ -58,21 +58,25 @@ namespace Compilator
                 if (CurrentLexem.Length == 0)
                 {
                     CurrentCharType = charType;
-                    CurrentLexem += CurrentChar;
-                } else if (charType == CurrentCharType)
-                {
-                    CurrentLexem += CurrentChar;
                 } else if (charType != CurrentCharType)
                 {
                     CloseLexem();
                     CurrentCharType = charType;
-                    CurrentLexem += CurrentChar;
+                }
+                CurrentLexem += CurrentChar;
+                if (charType != LexemCharType.Text && 
+                    !Lexems.Separators.Any(l => l.StartsWith(CurrentLexem)) && 
+                    !Lexems.Operations.Any(l => l.StartsWith(CurrentLexem)))
+                {
+                    var lastSym = CurrentLexem.Last();
+                    CurrentLexem = CurrentLexem.Substring(0, CurrentLexem.Length - 1);
+                    CloseLexem();
+                    CurrentLexem += lastSym;
                 }
             }
             CloseLexem();
             return RawLexems;
         }
-
         private void CloseLexem()
         {
             if (CurrentLexem.Length > 0)

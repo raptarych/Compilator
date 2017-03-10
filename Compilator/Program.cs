@@ -33,28 +33,47 @@ namespace Compilator
             {
                 if (lexemString.Length == 0) continue;
                 char firstChar = lexemString[0];
-                if ((firstChar >= '0' && firstChar <= '9') || firstChar == '"')
+                if (firstChar == '"')
                 {
-                    //Константа
+                    //Константа текстовая
                     var lexem = lexemString;
                     if (lexemString.IndexOf("\"") > 0) lexem = lexemString.Substring(1, lexemString.Length - 2);
                     if (!Lexems.Constants.Contains(lexem))
                     {
                         Lexems.Constants.Add(lexem);
                     }
-                    lexems.Add(new Lexem() { Key = CONSTANT, Value = (byte)Lexems.Constants.IndexOf(lexemString) });
+                    lexems.Add(new Lexem() { Key = CONSTANT, Value = (byte)Lexems.Constants.IndexOf(lexem) });
                     continue;
                 }
-                if (Lexems.Separators.Contains(firstChar))
+                if (firstChar >= '0' && firstChar <= '9')
                 {
-                    lexems.Add(new Lexem() { Key = SEPARATOR, Value = (byte) lexemString[0] });
+                    //Константа числовая
+                    var lexem = 0;
+                    if (!int.TryParse(lexemString, out lexem))
+                    {
+                        Console.WriteLine($"Invalid identifier: {lexemString});");
+                        return;
+                    }
+                    if (!Lexems.Constants.Contains(lexem))
+                    {
+                        Lexems.Constants.Add(lexem);
+                    }
+                    lexems.Add(new Lexem() { Key = CONSTANT, Value = (byte)Lexems.Constants.IndexOf(lexem) });
                     continue;
                 }
+                //Разделитель
+                if (Lexems.Separators.Contains(lexemString))
+                {
+                    lexems.Add(new Lexem() { Key = SEPARATOR, Value = (byte)Lexems.Separators.IndexOf(lexemString) });
+                    continue;
+                }
+                //Ключевое слово
                 if (Lexems.Keywords.Contains(lexemString))
                 {
                     lexems.Add(new Lexem() { Key = KEYWORD, Value = (byte) Lexems.Keywords.IndexOf(lexemString) });
                     continue;
                 }
+                //Операция
                 if (Lexems.Operations.Contains(lexemString))
                 {
                     lexems.Add(new Lexem() { Key = OPERATION, Value = (byte) lexemString[0] });

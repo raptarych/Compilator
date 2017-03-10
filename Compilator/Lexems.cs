@@ -51,17 +51,19 @@ namespace Compilator
 
         public static List<string> Identifiers = new List<string>();
         public static List<object> Constants = new List<object>();
-        public static readonly List<char> Separators = new List<char>
+        public static readonly List<string> Separators = new List<string>
         {
-            ';',
-            '(',
-            ')',
-            '{',
-            '}',
-            ']',
-            '[',
-            '.',
-            ','
+            ";",
+            "(",
+            ")",
+            "{",
+            "}",
+            "]",
+            "[",
+            "[[",
+            "]]",
+            ".",
+            ","
         };
 
     }
