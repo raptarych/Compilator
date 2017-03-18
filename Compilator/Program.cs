@@ -84,7 +84,7 @@ namespace Compilator
                 {
                     Lexems.Identifiers.Add(lexemString);
                 }
-                lexems.Add(new Lexem() { Key = CONSTANT, Value = (byte)Lexems.Identifiers.IndexOf(lexemString) });
+                lexems.Add(new Lexem() { Key = IDENTIFIER, Value = (byte)Lexems.Identifiers.IndexOf(lexemString) });
             }
 
             //3. Формат для вывода
