@@ -43,10 +43,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SyntacticBlock.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="ConWorker.cs" />
     <Compile Include="Lexems.cs" />
-    <Compile Include="LexicalSplitter.cs" />
+    <Compile Include="LexicalBlock.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

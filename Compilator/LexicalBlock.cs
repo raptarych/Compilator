@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Compilator
 {
-    class LexicalSplitter
+    class LexicalBlock
     {
         private Queue<char> Input { get; set; } = new Queue<char>();
         private char GetCurrentChar() => Input.Dequeue();
@@ -53,7 +53,7 @@ namespace Compilator
                 if (CurrentLexem.Length == 0)
                 {
                     CurrentCharType = charType;
-                } else if (charType != CurrentCharType)
+                } else if (charType != CurrentCharType || charType == LexemCharType.Separators)
                 {
                     CloseLexem();
                     CurrentCharType = charType;
@@ -89,41 +89,44 @@ namespace Compilator
                     {
                         Lexems.Constants.Add(lexem);
                     }
-                    lexems.Add(new Lexem() { Key = LexemType.CONSTANT, Value = (byte)Lexems.Constants.IndexOf(lexem) });
+                    lexems.Add(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(lexem) });
                     continue;
                 }
                 if (firstChar >= '0' && firstChar <= '9')
                 {
                     //Константа числовая
-                    var lexem = 0;
-                    if (!int.TryParse(lexemString, out lexem))
+                    object lexem;
+                    if (int.TryParse(lexemString, out int lexemInt)) lexem = lexemInt;
+                    else if (float.TryParse(lexemString.Replace(".", ","), out float lexemFloat)) lexem = lexemFloat;
+                    else
                     {
-                        Console.WriteLine($"Invalid identifier: {lexemString});");
+                        Console.WriteLine($"Invalid identifier: {lexemString}");
                         return new List<Lexem>();
                     }
+
                     if (!Lexems.Constants.Contains(lexem))
                     {
                         Lexems.Constants.Add(lexem);
                     }
-                    lexems.Add(new Lexem() { Key = LexemType.CONSTANT, Value = (byte)Lexems.Constants.IndexOf(lexem) });
+                    lexems.Add(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(lexem) });
                     continue;
                 }
                 //Разделитель
                 if (lexemString.Length == 1 && Lexems.Separators.Contains(lexemString[0]))
                 {
-                    lexems.Add(new Lexem() { Key = LexemType.SEPARATOR, Value = (byte)lexemString[0] });
+                    lexems.Add(new Lexem() { Key = LexemType.SEPARATOR, ValuePtr = (byte)lexemString[0] });
                     continue;
                 }
                 //Ключевое слово
                 if (Lexems.Keywords.Contains(lexemString))
                 {
-                    lexems.Add(new Lexem() { Key = LexemType.KEYWORD, Value = (byte)Lexems.Keywords.IndexOf(lexemString) });
+                    lexems.Add(new Lexem() { Key = LexemType.KEYWORD, ValuePtr = (byte)Lexems.Keywords.IndexOf(lexemString) });
                     continue;
                 }
                 //Операция
                 if (Lexems.Operations.Contains(lexemString))
                 {
-                    lexems.Add(new Lexem() { Key = LexemType.OPERATION, Value = (byte)lexemString[0] });
+                    lexems.Add(new Lexem() { Key = LexemType.OPERATION, ValuePtr = (byte)Lexems.Operations.IndexOf(lexemString) });
                     continue;
                 }
                 //Идентификатор (но это не точно)
@@ -131,7 +134,7 @@ namespace Compilator
                 {
                     Lexems.Identifiers.Add(lexemString);
                 }
-                lexems.Add(new Lexem() { Key = LexemType.IDENTIFIER, Value = (byte)Lexems.Identifiers.IndexOf(lexemString) });
+                lexems.Add(new Lexem() { Key = LexemType.IDENTIFIER, ValuePtr = (byte)Lexems.Identifiers.IndexOf(lexemString) });
             }
             return lexems;
         }

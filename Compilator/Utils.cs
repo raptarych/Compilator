@@ -8,7 +8,8 @@ namespace Compilator
 {
     public class Utils
     {
-
+        public const char Empty = 'ε';
+        public const string EmptyString = "ε";
     }
 
     public enum LexemCharType
@@ -26,5 +27,11 @@ namespace Compilator
         OPERATION = 3,
         SEPARATOR = 4,
         CONSTANT = 5
+    }
+
+    public enum StackItemType
+    {
+        Terminal = 1,
+        NonTerminal = 2
     }
 }

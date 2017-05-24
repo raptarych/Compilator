@@ -12,22 +12,25 @@ namespace Compilator
         {
             List<Lexem> lexems = new List<Lexem>();
 
-            //1. Разделение лексем
+            //1. Лексика
 
-            //Просто:
-            //var rawLexems = inputString.Split(' ');
-
-            //Сложно:
-            var lexemSplitter = new LexicalSplitter();
-            List<string> rawLexems = lexemSplitter.Parse(inputString);
+            //1.1 Разделение лексем
+            var lexemBlock = new LexicalBlock();
+            List<string> rawLexems = lexemBlock.Parse(inputString);
             Console.Write($"\nRaw lexems: {string.Join(",",rawLexems.Select(lexem => $"[{lexem}]"))}\n");
 
-            //2. Разбор лексем
-            lexems = lexemSplitter.RecognizeLexems(rawLexems);
+            //1.2 Разбор лексем
+            lexems = lexemBlock.RecognizeLexems(rawLexems);
 
-            //3. Формат для вывода
-            string outputString = $"Lexical analysis output:\t{string.Join("",lexems.Select(lexem => $"({lexem.Key},{(lexem.Key == LexemType.SEPARATOR ? ((char) lexem.Value).ToString() : lexem.Value.ToString())})"))}";
+            //1.3 Формат для вывода
+            string outputString = $"Lexical analysis output:\t{string.Join("",lexems.Select(lexem => $"({lexem.Key},{(lexem.Key == LexemType.SEPARATOR ? ((char) lexem.ValuePtr).ToString() : lexem.ValuePtr.ToString())})"))}";
             Console.WriteLine(outputString);
+
+            //2. Синтаксический анализ
+
+            var syntaticBlock = new SyntacticBlock();
+            syntaticBlock.ProcessInput(lexems);
+            
 
         }
         static void Main(string[] args)
