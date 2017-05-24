@@ -8,7 +8,7 @@ namespace Compilator
 {
     class Lexem
     {
-        public int Key { get; set; }
+        public LexemType Key { get; set; }
         public byte Value { get; set; }
     }
     class Lexems
@@ -16,23 +16,12 @@ namespace Compilator
         public static readonly List<string> Keywords = new List<string>()
         {
             "int",
-            "double",
-            "sign",
             "float",
-            "new",
-            "public",
-            "static",
-            "readonly",
-            "class",
-            "for",
+            "string",
             "while",
             "if",
             "then",
-            "else",
-            "foreach",
-            "return",
-            "get",
-            "set"
+            "else"
         };
         public static readonly List<string> Operations = new List<string>()
         {
@@ -41,29 +30,22 @@ namespace Compilator
             "-",
             "*",
             "/",
-            "++",
-            "--",
-            "+=",
-            "-=",
-            "*=",
-            "/="
+            "^"
         };
 
         public static List<string> Identifiers = new List<string>();
         public static List<object> Constants = new List<object>();
-        public static readonly List<string> Separators = new List<string>
+        public static readonly List<char> Separators = new List<char>
         {
-            ";",
-            "(",
-            ")",
-            "{",
-            "}",
-            "]",
-            "[",
-            "[[",
-            "]]",
-            ".",
-            ","
+            ';',
+            '(',
+            ')',
+            '{',
+            '}',
+            ']',
+            '[',
+            '.',
+            ','
         };
 
     }
