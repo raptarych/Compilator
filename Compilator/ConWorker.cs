@@ -16,9 +16,9 @@ namespace Compilator
             Console.WriteLine("Enter command:");
             while (true)
             {
-                if (InputString == "exit") break;
                 Console.Write(">");
                 InputString = Console.ReadLine();
+                if (InputString == "exit") break;
                 InputFunc(InputString);
             }
         }

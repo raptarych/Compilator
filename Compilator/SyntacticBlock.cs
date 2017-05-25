@@ -13,18 +13,17 @@ namespace Compilator
         public Stack<object> ValueStack = new Stack<object>();
         public Stack<string> TypeStack = new Stack<string>();
 
-        public string GrammarString = @"P -> k DEFINE ENDDEFINE		k
-DEFINE -> v = EXEC ENDEXEC		v
-EXEC -> ( BRACKET )		(
-BRACKET -> EXEC		c
+        public string GrammarString = @"P -> k DEFINE		k
+DEFINE -> v = EXEC		v
+EXEC -> ( EXEC ) RIGHTPART		(
 EXEC -> c RIGHTPART		c
 RIGHTPART -> + RIGHTPART		+
 RIGHTPART -> - RIGHTPART		-
-RIGHTPART -> c		c
+RIGHTPART -> c RIGHTPART		c
 RIGHTPART -> EXEC		(
-ENDEXEC -> RIGHTPART ENDEXEC		+ -
-ENDEXEC -> ;		;
-ENDDEFINE -> $		;";
+RIGHTPART -> $		)
+RIGHTPART -> ENDDEFINE		;
+ENDDEFINE -> ;		;";
 
         /// <summary>
         /// Словарь(нетерминал, (входной символ, правило))
@@ -49,7 +48,6 @@ ENDDEFINE -> $		;";
         public SyntacticBlock()
         {
             GrammarRules = GetGrammarRules();
-            MainStack.Push(GrammarRules.First().Key);
         }
 
         public void ProcessInput(List<Lexem> lexems)
@@ -58,7 +56,7 @@ ENDDEFINE -> $		;";
             var iterationsNum = 0;
             while (queue.Any())
             {
-                
+                if (!MainStack.Any()) MainStack.Push(GrammarRules.First().Key);
                 var currentLexem = queue.Peek();
                 string charLexemType;
                 switch (currentLexem.Key)
@@ -95,6 +93,7 @@ ENDDEFINE -> $		;";
                 Console.WriteLine($"Input: {string.Join(",",queue.ToArray().Select(lex => $"({lex.Key}:{lex.GetValue()})"))}");
                 Console.WriteLine($"Stack: {string.Join(",", MainStack.ToArray())}");
 
+
                 switch (currentStackItemType)
                 {
                     case StackItemType.NonTerminal:
@@ -107,7 +106,7 @@ ENDDEFINE -> $		;";
                         var rule = GrammarRules[currentStackItem][charLexemType];
 
                         MainStack.Pop();
-                        rule.Split(' ').Reverse().ToList().ForEach(ch => MainStack.Push(ch));
+                        if (rule != Utils.EmptyString) rule.Split(' ').Reverse().ToList().ForEach(ch => MainStack.Push(ch));
                         break;
                     case StackItemType.Terminal:
                         if (charLexemType == currentStackItem || currentStackItem == Utils.EmptyString && MainStack.Count == 1)
