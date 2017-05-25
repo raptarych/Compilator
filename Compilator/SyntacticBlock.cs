@@ -13,33 +13,18 @@ namespace Compilator
         public Stack<object> ValueStack = new Stack<object>();
         public Stack<string> TypeStack = new Stack<string>();
 
-        public string GrammarString = @"P –> D		k
-P –> I4		v
-D –>k I1		k
-I1 –>I I2		v
-I2 –>, I1		,
-I2 –> ;		; =
-I2 –> T		+ -
-I4 –> I3		v
-I –> v I3		v
-I3 –> = F		=
-I3 –> $		, ;
-E –> T Y		+ – v c ( ^
-X –> $		, ; ) ^
-T –> F Y		+ – v c ( ^
-Y –> + F Y		+
-Y –> - F Y		-
-Y –> * F Y		*
-Y –> / F Y		/
-Y –> S		^
-Y –> $		;
-S –> S ^ F		^
-S –> $		
-F –> + F		+
-F –> - F		–
-F –> v		v
-F –> c		c
-F –> ( E )		(";
+        public string GrammarString = @"P -> k DEFINE ENDDEFINE		k
+DEFINE -> v = EXEC ENDEXEC		v
+EXEC -> ( BRACKET )		(
+BRACKET -> EXEC		c
+EXEC -> c RIGHTPART		c
+RIGHTPART -> + RIGHTPART		+
+RIGHTPART -> - RIGHTPART		-
+RIGHTPART -> c		c
+RIGHTPART -> EXEC		(
+ENDEXEC -> RIGHTPART ENDEXEC		+ -
+ENDEXEC -> ;		;
+ENDDEFINE -> $		;";
 
         /// <summary>
         /// Словарь(нетерминал, (входной символ, правило))
@@ -155,9 +140,11 @@ F –> ( E )		(";
                 if (!MainStack.Any())
                 {
                     Console.WriteLine("Success!");
-                    break;
                 }
             }
+
+            if (MainStack.Any()) Console.WriteLine("Error during interpretation");
+            
         }
     }
 }
