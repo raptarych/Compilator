@@ -8,8 +8,8 @@ namespace Compilator
 {
     public class Utils
     {
-        public const char Empty = 'ε';
-        public const string EmptyString = "ε";
+        public const char Empty = '$';
+        public const string EmptyString = "$";
     }
 
     public enum LexemCharType

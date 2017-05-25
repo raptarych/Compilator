@@ -18,25 +18,26 @@ P –> I4		v
 D –>k I1		k
 I1 –>I I2		v
 I2 –>, I1		,
-I2 –> ε		; =
+I2 –> ;		; =
+I2 –> T		+ -
 I4 –> I3		v
-I –> v := I3		v
-I3 –> := E		=
-I3 –> ε		, ;
-E –> T X		+ – v c ( ^
-X –> T + X		+
-X –> T – X		–
-X –> ε		, ; ) ^
+I –> v I3		v
+I3 –> = F		=
+I3 –> $		, ;
+E –> T Y		+ – v c ( ^
+X –> $		, ; ) ^
 T –> F Y		+ – v c ( ^
-Y –> F * Y		*
-Y –> F / Y		/
+Y –> + F Y		+
+Y –> - F Y		-
+Y –> * F Y		*
+Y –> / F Y		/
 Y –> S		^
-Y –> ε		+ – ) , ;
+Y –> $		;
 S –> S ^ F		^
-S –> ε		
-F –> F ++		+
-F –> F ++		–
-F –> v {зн.перем.}		v
+S –> $		
+F –> + F		+
+F –> - F		–
+F –> v		v
 F –> c		c
 F –> ( E )		(";
 
@@ -51,7 +52,7 @@ F –> ( E )		(";
             foreach (var line in lines)
             {
                 var nonTerminal = new string(line.TakeWhile(ch => ch != '–' && ch != '-').ToArray()).Trim();
-                var terminals = new string(line.Reverse().TakeWhile(ch => ch != '\t').Reverse().ToArray()).Trim().Split(' ').Select(ch => !string.IsNullOrEmpty(ch) ? ch[0] : 'ε').ToList();
+                var terminals = new string(line.Reverse().TakeWhile(ch => ch != '\t').Reverse().ToArray()).Trim().Split(' ').Select(ch => !string.IsNullOrEmpty(ch) ? ch[0] : Utils.Empty).ToList();
                 var rule = new string(line.SkipWhile(ch => ch != '>').Skip(1).TakeWhile(ch => ch != '\t').ToArray()).Trim();
 
                 if (!result.ContainsKey(nonTerminal)) result[nonTerminal] = new Dictionary<string, string>();
@@ -63,17 +64,16 @@ F –> ( E )		(";
         public SyntacticBlock()
         {
             GrammarRules = GetGrammarRules();
-            MainStack.Push("ε");
             MainStack.Push(GrammarRules.First().Key);
         }
 
         public void ProcessInput(List<Lexem> lexems)
         {
-            lexems.Add(new Lexem() {Key = LexemType.UNKNOWN_LEXEM, ValuePtr = unchecked((byte) Utils.Empty) });
             var queue = new Queue<Lexem>(lexems);
-
+            var iterationsNum = 0;
             while (queue.Any())
             {
+                
                 var currentLexem = queue.Peek();
                 string charLexemType;
                 switch (currentLexem.Key)
@@ -99,11 +99,16 @@ F –> ( E )		(";
                 var currentStackItemType = currentStackItem != "k" 
                     && currentStackItem != "v" 
                     && currentStackItem != "c" 
+                    && currentStackItem != Utils.EmptyString
                     && !Lexems.Identifiers.Contains(currentStackItem) 
                     && !Lexems.Operations.Contains(currentStackItem)
                     && !Lexems.Separators.Contains(currentStackItem[0])
                     ? StackItemType.NonTerminal
                     : StackItemType.Terminal;
+
+                Console.WriteLine($"\nIteration {++iterationsNum}");
+                Console.WriteLine($"Input: {string.Join(",",queue.ToArray().Select(lex => $"({lex.Key}:{lex.GetValue()})"))}");
+                Console.WriteLine($"Stack: {string.Join(",", MainStack.ToArray())}");
 
                 switch (currentStackItemType)
                 {
@@ -111,7 +116,7 @@ F –> ( E )		(";
                         if (!GrammarRules.ContainsKey(currentStackItem) ||
                             !GrammarRules[currentStackItem].ContainsKey(charLexemType))
                         {
-                            Console.WriteLine("ERROR");
+                            Console.WriteLine($"ERROR {charLexemType}, stack top: {currentStackItem}");
                             return;
                         }
                         var rule = GrammarRules[currentStackItem][charLexemType];
@@ -120,31 +125,38 @@ F –> ( E )		(";
                         rule.Split(' ').Reverse().ToList().ForEach(ch => MainStack.Push(ch));
                         break;
                     case StackItemType.Terminal:
-                        if (charLexemType == currentStackItem)
+                        if (charLexemType == currentStackItem || currentStackItem == Utils.EmptyString && MainStack.Count == 1)
                         {
                             switch (currentLexem.Key)
                             {
                                 case LexemType.CONSTANT:
                                     ValueStack.Push(currentLexem.GetValue());
+                                    Console.WriteLine("Value written");
                                     break;
                                 case LexemType.IDENTIFIER:
-                                    NameStack.Push((string)currentLexem.GetValue());
+                                    NameStack.Push((string) currentLexem.GetValue());
+                                    Console.WriteLine("Name written");
                                     break;
                                 case LexemType.KEYWORD:
                                     TypeStack.Push((string) currentLexem.GetValue());
+                                    Console.WriteLine("Type written");
                                     break;
-                            }
-                            if (currentStackItem == Utils.EmptyString)
-                            {
-                                Console.WriteLine("Success!");
-                                return;
                             }
                             MainStack.Pop();
                             queue.Dequeue();
                         }
+                        else
+                        {
+                            Console.WriteLine($"ERROR: {charLexemType} {currentStackItem}");
+                            return;
+                        }
                         break;
                 }
-
+                if (!MainStack.Any())
+                {
+                    Console.WriteLine("Success!");
+                    break;
+                }
             }
         }
     }
