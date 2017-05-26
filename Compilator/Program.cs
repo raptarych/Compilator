@@ -8,9 +8,17 @@ namespace Compilator
 {
     class Program
     {
-        static void LexicalAnalysis(string inputString)
+        public static bool Debug = false; 
+        static void ParseInput(string inputString)
         {
             List<Lexem> lexems = new List<Lexem>();
+            
+            if (inputString == "debug")
+            {
+                Debug = !Debug;
+                Console.WriteLine($"Debug mode is {(Debug ? "on" : "off")}");
+                return;
+            }
 
             //1. Лексика
 
@@ -36,7 +44,7 @@ namespace Compilator
         static void Main(string[] args)
         {
             ConWorker conWorker = new ConWorker();
-            conWorker.AddHandler(LexicalAnalysis);
+            conWorker.AddHandler(ParseInput);
             conWorker.Start();
         }
     }

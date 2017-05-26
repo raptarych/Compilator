@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,21 +10,9 @@ namespace Compilator
     public class SyntacticBlock
     {
         public Stack<string> MainStack = new Stack<string>();
-        public Stack<string> NameStack = new Stack<string>();
-        public Stack<object> ValueStack = new Stack<object>();
-        public Stack<string> TypeStack = new Stack<string>();
-
-        public string GrammarString = @"P -> k DEFINE		k
-DEFINE -> v = EXEC		v
-EXEC -> ( EXEC ) RIGHTPART		(
-EXEC -> c RIGHTPART		c
-RIGHTPART -> + RIGHTPART		+
-RIGHTPART -> - RIGHTPART		-
-RIGHTPART -> c RIGHTPART		c
-RIGHTPART -> EXEC		(
-RIGHTPART -> $		)
-RIGHTPART -> ENDDEFINE		;
-ENDDEFINE -> ;		;";
+        public Stack<Lexem> NamePtrStack = new Stack<Lexem>();
+        public Stack<Lexem> ValuePtrStack = new Stack<Lexem>();
+        public Stack<Lexem> TypeStack = new Stack<Lexem>();
 
         /// <summary>
         /// Словарь(нетерминал, (входной символ, правило))
@@ -32,15 +21,19 @@ ENDDEFINE -> ;		;";
         public Dictionary<string, Dictionary<string, string>> GetGrammarRules()
         {
             var result = new Dictionary<string, Dictionary<string, string>>();
-            var lines = GrammarString.Split('\n');
-            foreach (var line in lines)
+            using (var file = File.OpenText("GrammarRules.dat"))
             {
-                var nonTerminal = new string(line.TakeWhile(ch => ch != '–' && ch != '-').ToArray()).Trim();
-                var terminals = new string(line.Reverse().TakeWhile(ch => ch != '\t').Reverse().ToArray()).Trim().Split(' ').Select(ch => !string.IsNullOrEmpty(ch) ? ch[0] : Utils.Empty).ToList();
-                var rule = new string(line.SkipWhile(ch => ch != '>').Skip(1).TakeWhile(ch => ch != '\t').ToArray()).Trim();
+                while (!file.EndOfStream)
+                {
+                    var line = file.ReadLine();
+                    if (string.IsNullOrEmpty(line)) continue;
+                    var nonTerminal = new string(line.TakeWhile(ch => ch != '–' && ch != '-').ToArray()).Trim();
+                    var terminals = new string(line.Reverse().TakeWhile(ch => ch != '\t').Reverse().ToArray()).Trim().Split(' ').Select(ch => !string.IsNullOrEmpty(ch) ? ch[0] : Utils.Empty).ToList();
+                    var rule = new string(line.SkipWhile(ch => ch != '>').Skip(1).TakeWhile(ch => ch != '\t').ToArray()).Trim();
 
-                if (!result.ContainsKey(nonTerminal)) result[nonTerminal] = new Dictionary<string, string>();
-                terminals.ForEach(terminal => result[nonTerminal].Add(terminal.ToString(), rule));
+                    if (!result.ContainsKey(nonTerminal)) result[nonTerminal] = new Dictionary<string, string>();
+                    terminals.ForEach(terminal => result[nonTerminal].Add(terminal.ToString(), rule));
+                }
             }
             return result;
         }
@@ -89,11 +82,14 @@ ENDDEFINE -> ;		;";
                     ? StackItemType.NonTerminal
                     : StackItemType.Terminal;
 
-                Console.WriteLine($"\nIteration {++iterationsNum}");
-                Console.WriteLine($"Input: {string.Join(",",queue.ToArray().Select(lex => $"({lex.Key}:{lex.GetValue()})"))}");
-                Console.WriteLine($"Stack: {string.Join(",", MainStack.ToArray())}");
-
-
+                if (Program.Debug)
+                {
+                    Console.WriteLine($"\nIteration {++iterationsNum}");
+                    Console.WriteLine($"Input: {string.Join(",", queue.ToArray().Select(lex => $"({lex.Key}:{lex.GetValue()})"))}");
+                    Console.WriteLine($"Stack: {string.Join(",", MainStack.ToArray())}");
+                    Console.ReadKey();
+                }
+                
                 switch (currentStackItemType)
                 {
                     case StackItemType.NonTerminal:
@@ -104,6 +100,49 @@ ENDDEFINE -> ;		;";
                             return;
                         }
                         var rule = GrammarRules[currentStackItem][charLexemType];
+                        if (currentStackItem == "OPER_TRIGGER")
+                        {
+                            var N2Lexem = ValuePtrStack.Pop();
+                            var oper = ValuePtrStack.Pop();
+                            var operatorType = (string) oper.GetValue();
+                            var N1Lexem = ValuePtrStack.Pop();
+
+                            switch (operatorType)
+                            {
+                                case "+":
+                                    var add = (int)N1Lexem.GetValue() + (int)N2Lexem.GetValue();
+                                    if (!Lexems.Constants.Contains(add)) Lexems.Constants.Add(add);
+                                    ValuePtrStack.Push(new Lexem() {Key = LexemType.CONSTANT, ValuePtr = (byte) Lexems.Constants.IndexOf(add) });
+                                    break;
+                                case "-":
+                                    var minus = (int)N1Lexem.GetValue() - (int)N2Lexem.GetValue();
+                                    if (!Lexems.Constants.Contains(minus)) Lexems.Constants.Add(minus);
+                                    ValuePtrStack.Push(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(minus) });
+                                    break;
+                                case "/":
+                                    var divide = (int)N1Lexem.GetValue() / (int)N2Lexem.GetValue();
+                                    if (!Lexems.Constants.Contains(divide)) Lexems.Constants.Add(divide);
+                                    ValuePtrStack.Push(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(divide) });
+                                    break;
+                                case "*":
+                                    var multiply = (int)N1Lexem.GetValue() * (int)N2Lexem.GetValue();
+                                    if (!Lexems.Constants.Contains(multiply)) Lexems.Constants.Add(multiply);
+                                    ValuePtrStack.Push(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(multiply) });
+                                    break;
+                            }
+                        } else if (currentStackItem == "ENDDEFINE")
+                        {
+                            var N1Lexem = ValuePtrStack.Pop();
+                            var oper = ValuePtrStack.Pop();
+                            var operatorType = (string)oper.GetValue();
+                            if (operatorType == "=")
+                            {
+                                var identifierName = (string)NamePtrStack.Pop().GetValue();
+                                var value = N1Lexem.GetValue();
+                                if (!Lexems.Identifiers.Contains(identifierName)) Lexems.Identifiers.Add(identifierName);
+                                Console.WriteLine($"Defined {identifierName}: {value}");
+                            }
+                        }
 
                         MainStack.Pop();
                         if (rule != Utils.EmptyString) rule.Split(' ').Reverse().ToList().ForEach(ch => MainStack.Push(ch));
@@ -114,16 +153,17 @@ ENDDEFINE -> ;		;";
                             switch (currentLexem.Key)
                             {
                                 case LexemType.CONSTANT:
-                                    ValueStack.Push(currentLexem.GetValue());
-                                    Console.WriteLine("Value written");
+                                case LexemType.OPERATION:
+                                    ValuePtrStack.Push(currentLexem);
+                                    if (Program.Debug) Console.WriteLine("Value or operator written");
                                     break;
                                 case LexemType.IDENTIFIER:
-                                    NameStack.Push((string) currentLexem.GetValue());
-                                    Console.WriteLine("Name written");
+                                    NamePtrStack.Push(currentLexem);
+                                    if (Program.Debug) Console.WriteLine("Name written");
                                     break;
                                 case LexemType.KEYWORD:
-                                    TypeStack.Push((string) currentLexem.GetValue());
-                                    Console.WriteLine("Type written");
+                                    TypeStack.Push(currentLexem);
+                                    if (Program.Debug) Console.WriteLine("Type written");
                                     break;
                             }
                             MainStack.Pop();
