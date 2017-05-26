@@ -43,6 +43,12 @@ namespace Compilator
             GrammarRules = GetGrammarRules();
         }
 
+        public void Arithmetic(object val)
+        {
+            if (!Lexems.Constants.Contains(val)) Lexems.Constants.Add(val);
+            ValuePtrStack.Push(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(val) });
+        }
+
         public void ProcessInput(List<Lexem> lexems)
         {
             var queue = new Queue<Lexem>(lexems);
@@ -96,7 +102,10 @@ namespace Compilator
                         if (!GrammarRules.ContainsKey(currentStackItem) ||
                             !GrammarRules[currentStackItem].ContainsKey(charLexemType))
                         {
-                            Console.WriteLine($"ERROR {charLexemType}, stack top: {currentStackItem}");
+                            if (!GrammarRules.ContainsKey(currentStackItem))
+                                Console.WriteLine($"ERROR: unknown grammar {currentStackItem}");
+                            else
+                            Console.WriteLine($"ERROR: unexpected character {charLexemType}, expected symbols: {string.Join(",",GrammarRules[currentStackItem].Keys)}");
                             return;
                         }
                         var rule = GrammarRules[currentStackItem][charLexemType];
@@ -111,23 +120,19 @@ namespace Compilator
                             {
                                 case "+":
                                     var add = (int)N1Lexem.GetValue() + (int)N2Lexem.GetValue();
-                                    if (!Lexems.Constants.Contains(add)) Lexems.Constants.Add(add);
-                                    ValuePtrStack.Push(new Lexem() {Key = LexemType.CONSTANT, ValuePtr = (byte) Lexems.Constants.IndexOf(add) });
+                                    Arithmetic(add);
                                     break;
                                 case "-":
                                     var minus = (int)N1Lexem.GetValue() - (int)N2Lexem.GetValue();
-                                    if (!Lexems.Constants.Contains(minus)) Lexems.Constants.Add(minus);
-                                    ValuePtrStack.Push(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(minus) });
+                                    Arithmetic(minus);
                                     break;
                                 case "/":
                                     var divide = (int)N1Lexem.GetValue() / (int)N2Lexem.GetValue();
-                                    if (!Lexems.Constants.Contains(divide)) Lexems.Constants.Add(divide);
-                                    ValuePtrStack.Push(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(divide) });
+                                    Arithmetic(divide);
                                     break;
                                 case "*":
                                     var multiply = (int)N1Lexem.GetValue() * (int)N2Lexem.GetValue();
-                                    if (!Lexems.Constants.Contains(multiply)) Lexems.Constants.Add(multiply);
-                                    ValuePtrStack.Push(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(multiply) });
+                                    Arithmetic(multiply);
                                     break;
                             }
                         } else if (currentStackItem == "ENDDEFINE")
@@ -140,7 +145,8 @@ namespace Compilator
                                 var identifierName = (string)NamePtrStack.Pop().GetValue();
                                 var value = N1Lexem.GetValue();
                                 if (!Lexems.Identifiers.Contains(identifierName)) Lexems.Identifiers.Add(identifierName);
-                                Console.WriteLine($"Defined {identifierName}: {value}");
+                                Program.Variables[identifierName] = (int) value;
+                                Console.WriteLine($"Defined {identifierName} with value {value}");
                             }
                         }
 
@@ -150,6 +156,8 @@ namespace Compilator
                     case StackItemType.Terminal:
                         if (charLexemType == currentStackItem || currentStackItem == Utils.EmptyString && MainStack.Count == 1)
                         {
+                            MainStack.Pop();
+                            queue.Dequeue();
                             switch (currentLexem.Key)
                             {
                                 case LexemType.CONSTANT:
@@ -158,7 +166,22 @@ namespace Compilator
                                     if (Program.Debug) Console.WriteLine("Value or operator written");
                                     break;
                                 case LexemType.IDENTIFIER:
-                                    NamePtrStack.Push(currentLexem);
+                                    if (MainStack.Peek() != "RIGHTPART") NamePtrStack.Push(currentLexem);
+                                    else
+                                    {
+                                        var varName = (string) currentLexem.GetValue();
+                                        if (!Program.Variables.ContainsKey(varName))
+                                        {
+                                            Console.WriteLine($"Undeclared variable '{varName}'");
+                                            return;
+                                        }
+                                        Lexems.Constants.Add(Program.Variables[varName]);
+                                        ValuePtrStack.Push(new Lexem()
+                                        {
+                                            Key = LexemType.CONSTANT,
+                                            ValuePtr = (byte) Lexems.Constants.IndexOf(Program.Variables[varName])
+                                        });
+                                    }
                                     if (Program.Debug) Console.WriteLine("Name written");
                                     break;
                                 case LexemType.KEYWORD:
@@ -166,24 +189,19 @@ namespace Compilator
                                     if (Program.Debug) Console.WriteLine("Type written");
                                     break;
                             }
-                            MainStack.Pop();
-                            queue.Dequeue();
                         }
                         else
                         {
-                            Console.WriteLine($"ERROR: {charLexemType} {currentStackItem}");
+                            Console.WriteLine($"Unexpected symbol {charLexemType}, '{currentStackItem}' expected");
                             return;
                         }
                         break;
                 }
-                if (!MainStack.Any())
-                {
-                    Console.WriteLine("Success!");
-                }
             }
 
-            if (MainStack.Any()) Console.WriteLine("Error during interpretation");
-            
+            if (MainStack.Any()) Console.WriteLine("Unexpected end");
+            else Console.WriteLine("Success!");
+
         }
     }
 }

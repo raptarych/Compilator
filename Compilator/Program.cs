@@ -8,7 +8,8 @@ namespace Compilator
 {
     class Program
     {
-        public static bool Debug = false; 
+        public static bool Debug;
+        public static Dictionary<string, object> Variables = new Dictionary<string, object>();
         static void ParseInput(string inputString)
         {
             List<Lexem> lexems = new List<Lexem>();
@@ -25,19 +26,27 @@ namespace Compilator
             //1.1 Разделение лексем
             var lexemBlock = new LexicalBlock();
             List<string> rawLexems = lexemBlock.Parse(inputString);
-            Console.Write($"\nRaw lexems: {string.Join(",",rawLexems.Select(lexem => $"[{lexem}]"))}\n");
+            if (Debug) Console.Write($"\nRaw lexems: {string.Join(",",rawLexems.Select(lexem => $"[{lexem}]"))}\n");
 
             //1.2 Разбор лексем
             lexems = lexemBlock.RecognizeLexems(rawLexems);
 
             //1.3 Формат для вывода
             string outputString = $"Lexical analysis output:\t{string.Join("",lexems.Select(lexem => $"({lexem.Key},{(lexem.Key == LexemType.SEPARATOR ? ((char) lexem.ValuePtr).ToString() : lexem.ValuePtr.ToString())})"))}";
-            Console.WriteLine(outputString);
+            if (Debug) Console.WriteLine(outputString);
 
             //2. Синтаксический анализ
-
-            var syntaticBlock = new SyntacticBlock();
-            syntaticBlock.ProcessInput(lexems);
+            try
+            {
+                var syntaticBlock = new SyntacticBlock();
+                syntaticBlock.ProcessInput(lexems);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"C# exception: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+            }
+            
             
 
         }
