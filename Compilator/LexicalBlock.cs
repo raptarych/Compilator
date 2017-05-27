@@ -50,6 +50,12 @@ namespace Compilator
 
                 var charType = GetType(CurrentChar);
 
+                if (CurrentLexem.Length == 0 && CurrentChar == '-' && Input.Peek() >= '0' && Input.Peek() <= '9')
+                {
+                    CurrentCharType = LexemCharType.Text;
+                    CurrentLexem += CurrentChar;
+                    continue;
+                }
                 if (CurrentLexem.Length == 0)
                 {
                     CurrentCharType = charType;
@@ -92,7 +98,7 @@ namespace Compilator
                     lexems.Add(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(lexem) });
                     continue;
                 }
-                if (firstChar >= '0' && firstChar <= '9')
+                if (firstChar >= '0' && firstChar <= '9' || firstChar == '-')
                 {
                     //Константа числовая
                     object lexem;
