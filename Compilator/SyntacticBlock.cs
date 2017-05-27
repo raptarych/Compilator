@@ -51,6 +51,62 @@ namespace Compilator
             ValuePtrStack.Push(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(val) });
         }
 
+        public void HandleControlChar(string controlChar)
+        {
+            var trigger = controlChar.Substring(0, controlChar.Length - 8);
+            switch (trigger)
+            {
+                case "DEFINE":
+                    var defineVarType = (string) TypeStack.Peek().GetValue();
+                    var defineVarName = (string) NamePtrStack.Peek().GetValue();
+
+                    switch (defineVarType)
+                    {
+                        case "int":
+                            Program.Variables[defineVarName] = 0;
+                            break;
+                        case "float":
+                            Program.Variables[defineVarName] = 0f;
+                            break;
+                        case "string":
+                            Program.Variables[defineVarName] = "";
+                            break;
+                    }
+                    break;
+                case "ADD":
+                    var addN2 = ValuePtrStack.Pop().GetValue();
+                    var addN1 = ValuePtrStack.Pop().GetValue();
+                    if (addN1 is int && addN2 is int)
+                    {
+                        var addNew = (int) addN2 + (int) addN1;
+                        ValuePtrStack.Push(Lexems.SaveConstant(addNew));
+                    }
+                    break;
+                case "MULT":
+                    var multN2 = ValuePtrStack.Pop().GetValue();
+                    var multN1 = ValuePtrStack.Pop().GetValue();
+                    if (multN1 is int && multN2 is int)
+                    {
+                        var addNew = (int)multN2 * (int)multN1;
+                        ValuePtrStack.Push(Lexems.SaveConstant(addNew));
+                    }
+                    break;
+                case "EQUATION":
+                    var equationLeft = (string) NamePtrStack.Pop().GetValue();
+                    var equationRight = ValuePtrStack.Pop().GetValue();
+                    if (!Program.Variables.ContainsKey(equationLeft)) throw new Exception($"Variable wasn't initialized: {equationLeft}");
+                    Program.Variables[equationLeft] = equationRight;
+                    Console.WriteLine($"Eq: {equationLeft} = {equationRight}");
+                    break;
+                case "GET":
+                    var getName = (string) NamePtrStack.Pop().GetValue();
+                    if (!Program.Variables.ContainsKey(getName)) throw new Exception($"Variable wasn't initialized: {getName}");
+                    var getValue = Program.Variables[getName];
+                    ValuePtrStack.Push(Lexems.SaveConstant(getValue));
+                    break;
+            } 
+        }
+
         public void ProcessInput(List<Lexem> lexems)
         {
             var queue = new Queue<Lexem>(lexems);
@@ -111,38 +167,8 @@ namespace Compilator
                             return;
                         }
                         var rule = GrammarRules[currentStackItem][charLexemType];
-                        if (currentStackItem == "OPER_TRIGGER")
-                        {
-                            var N2Lexem = ValuePtrStack.Pop();
-                            var oper = ValuePtrStack.Pop();
-                            var operatorType = (string) oper.GetValue();
-                            var N1Lexem = ValuePtrStack.Pop();
-
-                            switch (operatorType)
-                            {
-                                case "+":
-                                    var add = (int)N1Lexem.GetValue() + (int)N2Lexem.GetValue();
-                                    Arithmetic(add);
-                                    break;
-                                case "-":
-                                    var minus = (int)N1Lexem.GetValue() - (int)N2Lexem.GetValue();
-                                    Arithmetic(minus);
-                                    break;
-                            }
-                        } else if (currentStackItem == "ENDDEFINE")
-                        {
-                            var N1Lexem = ValuePtrStack.Pop();
-                            var oper = ValuePtrStack.Pop();
-                            var operatorType = (string)oper.GetValue();
-                            if (operatorType == "=")
-                            {
-                                var identifierName = (string)NamePtrStack.Pop().GetValue();
-                                var value = N1Lexem.GetValue();
-                                if (!Lexems.Identifiers.Contains(identifierName)) Lexems.Identifiers.Add(identifierName);
-                                Program.Variables[identifierName] = (int) value;
-                                Console.WriteLine($"Defined {identifierName} with value {value}");
-                            }
-                        }
+                        
+                        if (currentStackItem.EndsWith("_TRIGGER")) HandleControlChar(currentStackItem);
 
                         MainStack.Pop();
                         if (rule != Utils.EmptyString) rule.Split(' ').Reverse().ToList().ForEach(ch => MainStack.Push(ch));
@@ -155,9 +181,8 @@ namespace Compilator
                             switch (currentLexem.Key)
                             {
                                 case LexemType.CONSTANT:
-                                case LexemType.OPERATION:
                                     ValuePtrStack.Push(currentLexem);
-                                    if (Program.Debug) Console.WriteLine("Value or operator written");
+                                    if (Program.Debug) Console.WriteLine("Value written");
                                     break;
                                 case LexemType.IDENTIFIER:
                                     NamePtrStack.Push(currentLexem);

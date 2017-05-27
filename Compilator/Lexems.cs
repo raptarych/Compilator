@@ -70,5 +70,11 @@ namespace Compilator
             ','
         };
 
+        public static Lexem SaveConstant(object value)
+        {
+            if (!Constants.Contains(value)) Constants.Add(value);
+            return new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(value) };
+        }
+
     }
 }
