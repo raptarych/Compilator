@@ -49,9 +49,9 @@ namespace Compilator
                 }
 
                 var charType = GetType(CurrentChar);
-
-                if (CurrentLexem.Length == 0 && CurrentChar == '-' && Input.Peek() >= '0' && Input.Peek() <= '9')
+                if (CurrentChar == '-' && Input.Any() && Input.Peek() >= '0' && Input.Peek() <= '9' && (RawLexems.Last()[0] == '=' || RawLexems.Last()[0] == '('))
                 {
+                    if (CurrentLexem.Length > 0) CloseLexem();
                     CurrentCharType = LexemCharType.Text;
                     CurrentLexem += CurrentChar;
                     continue;
@@ -90,7 +90,7 @@ namespace Compilator
                 {
                     //Константа текстовая
                     var lexem = lexemString;
-                    if (lexemString.IndexOf("\"") > 0) lexem = lexemString.Substring(1, lexemString.Length - 2);
+                    if (lexemString.Contains("\"")) lexem = lexemString.Substring(1, lexemString.Length - 2);
                     if (!Lexems.Constants.Contains(lexem))
                     {
                         Lexems.Constants.Add(lexem);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -51,7 +52,60 @@ namespace Compilator
             ValuePtrStack.Push(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(val) });
         }
 
-        public void HandleControlChar(string controlChar)
+        private void Arithmetic(object N1obj, object N2obj, string type)
+        {
+            object addNew = null;
+            if (N1obj is int && N2obj is int)
+            {
+                var N1 = (int)N1obj;
+                var N2 = (int)N2obj;
+                switch (type)
+                {
+                    case "ADD":
+                        addNew = N1 + N2;
+                        break;
+                    case "SUB":
+                        addNew = N1 - N2;
+                        break;
+                    case "DIV":
+                        addNew = N1 / N2;
+                        break;
+                    case "MULT":
+                        addNew = N1 * N2;
+                        break;
+                }
+            } else if (N1obj is float || N2obj is float)
+            {
+                var N1 = N1obj as float? ?? (int) N1obj;
+                var N2 = N2obj as float? ?? (int) N2obj;
+                switch (type)
+                {
+                    case "ADD":
+                        addNew = N1 + N2;
+                        break;
+                    case "SUB":
+                        addNew = N1 - N2;
+                        break;
+                    case "DIV":
+                        addNew = N1 / N2;
+                        break;
+                    case "MULT":
+                        addNew = N1 * N2;
+                        break;
+                }
+            }
+            else if (N1obj is string || N2obj is string)
+            {
+                var N1 = (string)N1obj;
+                var N2 = (string)N2obj;
+                if (type == "ADD")
+                    addNew = N1 + N2;
+                else throw new Exception($"Operation {type} for string types is not currently available, please do not shot at your leg");
+            }
+            ValuePtrStack.Push(Lexems.SaveConstant(addNew));
+        }
+
+        private void HandleControlChar(string controlChar)
         {
             var trigger = controlChar.Substring(0, controlChar.Length - 8);
             switch (trigger)
@@ -74,27 +128,34 @@ namespace Compilator
                     }
                     break;
                 case "ADD":
+                case "SUB":
+                case "MULT":
+                case "DIV":
                     var addN2 = ValuePtrStack.Pop().GetValue();
                     var addN1 = ValuePtrStack.Pop().GetValue();
-                    if (addN1 is int && addN2 is int)
-                    {
-                        var addNew = (int) addN2 + (int) addN1;
-                        ValuePtrStack.Push(Lexems.SaveConstant(addNew));
-                    }
-                    break;
-                case "MULT":
-                    var multN2 = ValuePtrStack.Pop().GetValue();
-                    var multN1 = ValuePtrStack.Pop().GetValue();
-                    if (multN1 is int && multN2 is int)
-                    {
-                        var addNew = (int)multN2 * (int)multN1;
-                        ValuePtrStack.Push(Lexems.SaveConstant(addNew));
-                    }
+                    Arithmetic(addN1, addN2, trigger);
                     break;
                 case "EQUATION":
-                    var equationLeft = (string) NamePtrStack.Pop().GetValue();
+                    var equationLeft = (string) NamePtrStack.Peek().GetValue();
                     var equationRight = ValuePtrStack.Pop().GetValue();
                     if (!Program.Variables.ContainsKey(equationLeft)) throw new Exception($"Variable wasn't initialized: {equationLeft}");
+                    var identificatorType = Program.Variables[equationLeft].GetType();
+                    var valueType = equationRight.GetType();
+                    if (valueType != identificatorType)
+                    {
+                        if (identificatorType == typeof(int) && valueType == typeof(float))
+                        {
+                            Console.WriteLine(
+                                $"Warning: appropriating a float value to integer identificator {equationLeft}");
+                            equationRight = Math.Floor((float) equationRight);
+                        } else if (identificatorType == typeof(float) && valueType == typeof(int))
+                            equationRight = (float) equationRight;
+                        else if (identificatorType == typeof(string) && valueType == typeof(float))
+                            equationRight = ((float) equationRight).ToString(CultureInfo.InvariantCulture);
+                        else if (identificatorType == typeof(string) && valueType == typeof(int))
+                            equationRight = ((int) equationRight).ToString(CultureInfo.InvariantCulture);
+                        else throw new Exception($"Trying to approptiate '{valueType}' to '{identificatorType}'");
+                    }
                     Program.Variables[equationLeft] = equationRight;
                     Console.WriteLine($"Eq: {equationLeft} = {equationRight}");
                     break;
@@ -103,6 +164,9 @@ namespace Compilator
                     if (!Program.Variables.ContainsKey(getName)) throw new Exception($"Variable wasn't initialized: {getName}");
                     var getValue = Program.Variables[getName];
                     ValuePtrStack.Push(Lexems.SaveConstant(getValue));
+                    break;
+                case "REMOVE_IDENT":
+                    NamePtrStack.Pop();
                     break;
             } 
         }
@@ -202,10 +266,7 @@ namespace Compilator
                         break;
                 }
             }
-
             if (MainStack.Any()) Console.WriteLine("Unexpected end");
-            else Console.WriteLine("Success!");
-
         }
     }
 }
