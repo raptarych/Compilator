@@ -96,8 +96,10 @@ namespace Compilator
                 {
                     //Константа числовая
                     object lexem;
-                    if (int.TryParse(lexemString, out int lexemInt)) lexem = lexemInt;
-                    else if (float.TryParse(lexemString.Replace(".", ","), out float lexemFloat)) lexem = lexemFloat;
+                    int lexemInt;
+                    float lexemFloat;
+                    if (int.TryParse(lexemString, out lexemInt)) lexem = lexemInt;
+                    else if (float.TryParse(lexemString.Replace(".", ","), out lexemFloat)) lexem = lexemFloat;
                     else
                     {
                         Console.WriteLine($"Invalid identifier: {lexemString}");

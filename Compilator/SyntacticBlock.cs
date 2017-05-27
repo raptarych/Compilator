@@ -27,6 +27,8 @@ namespace Compilator
                 {
                     var line = file.ReadLine();
                     if (string.IsNullOrEmpty(line)) continue;
+                    if (Program.Debug) Console.WriteLine(line);
+                    
                     var nonTerminal = new string(line.TakeWhile(ch => ch != '–' && ch != '-').ToArray()).Trim();
                     var terminals = new string(line.Reverse().TakeWhile(ch => ch != '\t').Reverse().ToArray()).Trim().Split(' ').Select(ch => !string.IsNullOrEmpty(ch) ? ch[0] : Utils.Empty).ToList();
                     var rule = new string(line.SkipWhile(ch => ch != '>').Skip(1).TakeWhile(ch => ch != '\t').ToArray()).Trim();
@@ -126,14 +128,6 @@ namespace Compilator
                                     var minus = (int)N1Lexem.GetValue() - (int)N2Lexem.GetValue();
                                     Arithmetic(minus);
                                     break;
-                                case "/":
-                                    var divide = (int)N1Lexem.GetValue() / (int)N2Lexem.GetValue();
-                                    Arithmetic(divide);
-                                    break;
-                                case "*":
-                                    var multiply = (int)N1Lexem.GetValue() * (int)N2Lexem.GetValue();
-                                    Arithmetic(multiply);
-                                    break;
                             }
                         } else if (currentStackItem == "ENDDEFINE")
                         {
@@ -166,22 +160,7 @@ namespace Compilator
                                     if (Program.Debug) Console.WriteLine("Value or operator written");
                                     break;
                                 case LexemType.IDENTIFIER:
-                                    if (MainStack.Peek() != "RIGHTPART") NamePtrStack.Push(currentLexem);
-                                    else
-                                    {
-                                        var varName = (string) currentLexem.GetValue();
-                                        if (!Program.Variables.ContainsKey(varName))
-                                        {
-                                            Console.WriteLine($"Undeclared variable '{varName}'");
-                                            return;
-                                        }
-                                        Lexems.Constants.Add(Program.Variables[varName]);
-                                        ValuePtrStack.Push(new Lexem()
-                                        {
-                                            Key = LexemType.CONSTANT,
-                                            ValuePtr = (byte) Lexems.Constants.IndexOf(Program.Variables[varName])
-                                        });
-                                    }
+                                    NamePtrStack.Push(currentLexem);
                                     if (Program.Debug) Console.WriteLine("Name written");
                                     break;
                                 case LexemType.KEYWORD:
