@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CompilatorException.cs" />
     <Compile Include="SyntacticBlock.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="ConWorker.cs" />

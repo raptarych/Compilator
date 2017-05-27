@@ -49,7 +49,7 @@ namespace Compilator
                 }
 
                 var charType = GetType(CurrentChar);
-                if (CurrentChar == '-' && Input.Any() && Input.Peek() >= '0' && Input.Peek() <= '9' && (RawLexems.Last()[0] == '=' || RawLexems.Last()[0] == '('))
+                if (CurrentChar == '-' && Input.Any() && Input.Peek() >= '0' && Input.Peek() <= '9' && (RawLexems.Last()[0] == '=' || RawLexems.Last()[0] == '(' || GetType(RawLexems.Last()[0]) == LexemCharType.Operations))
                 {
                     if (CurrentLexem.Length > 0) CloseLexem();
                     CurrentCharType = LexemCharType.Text;
@@ -98,7 +98,7 @@ namespace Compilator
                     lexems.Add(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(lexem) });
                     continue;
                 }
-                if (firstChar >= '0' && firstChar <= '9' || firstChar == '-')
+                if (firstChar >= '0' && firstChar <= '9' || firstChar == '-' && lexemString.Length > 1 && lexemString[1] != '-')
                 {
                     //Константа числовая
                     object lexem;

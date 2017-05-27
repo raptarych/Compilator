@@ -31,7 +31,7 @@ namespace Compilator
                     if (Program.Debug) Console.WriteLine(line);
                     
                     var nonTerminal = new string(line.TakeWhile(ch => ch != '–' && ch != '-').ToArray()).Trim();
-                    var terminals = new string(line.Reverse().TakeWhile(ch => ch != '\t').Reverse().ToArray()).Trim().Split(' ').Select(ch => !string.IsNullOrEmpty(ch) ? ch[0] : Utils.Empty).ToList();
+                    var terminals = new string(line.Reverse().TakeWhile(ch => ch != '\t').Reverse().ToArray()).Trim().Split(' ').Select(ch => !string.IsNullOrEmpty(ch) ? ch : Utils.EmptyString).ToList();
                     var rule = new string(line.SkipWhile(ch => ch != '>').Skip(1).TakeWhile(ch => ch != '\t').ToArray()).Trim();
 
                     if (!result.ContainsKey(nonTerminal)) result[nonTerminal] = new Dictionary<string, string>();
@@ -68,6 +68,7 @@ namespace Compilator
                         addNew = N1 - N2;
                         break;
                     case "DIV":
+                        if (N2 == 0) throw new CompilatorException("dividing by zero");
                         addNew = N1 / N2;
                         break;
                     case "MULT":
@@ -87,6 +88,7 @@ namespace Compilator
                         addNew = N1 - N2;
                         break;
                     case "DIV":
+                        if (Math.Abs(N2) < 0.0001) throw new CompilatorException("dividing by zero");
                         addNew = N1 / N2;
                         break;
                     case "MULT":
@@ -96,11 +98,11 @@ namespace Compilator
             }
             else if (N1obj is string || N2obj is string)
             {
-                var N1 = (string)N1obj;
-                var N2 = (string)N2obj;
+                var N1 = N1obj.ToString();
+                var N2 = N2obj.ToString();
                 if (type == "ADD")
                     addNew = N1 + N2;
-                else throw new Exception($"Operation {type} for string types is not currently available, please do not shot at your leg");
+                else throw new CompilatorException($"Operation {type} for string types is not currently available, please do not shot at your leg");
             }
             ValuePtrStack.Push(Lexems.SaveConstant(addNew));
         }
@@ -138,7 +140,7 @@ namespace Compilator
                 case "EQUATION":
                     var equationLeft = (string) NamePtrStack.Peek().GetValue();
                     var equationRight = ValuePtrStack.Pop().GetValue();
-                    if (!Program.Variables.ContainsKey(equationLeft)) throw new Exception($"Variable wasn't initialized: {equationLeft}");
+                    if (!Program.Variables.ContainsKey(equationLeft)) throw new CompilatorException($"Variable wasn't initialized: {equationLeft}");
                     var identificatorType = Program.Variables[equationLeft].GetType();
                     var valueType = equationRight.GetType();
                     if (valueType != identificatorType)
@@ -149,21 +151,39 @@ namespace Compilator
                                 $"Warning: appropriating a float value to integer identificator {equationLeft}");
                             equationRight = Math.Floor((float) equationRight);
                         } else if (identificatorType == typeof(float) && valueType == typeof(int))
-                            equationRight = (float) equationRight;
-                        else if (identificatorType == typeof(string) && valueType == typeof(float))
-                            equationRight = ((float) equationRight).ToString(CultureInfo.InvariantCulture);
-                        else if (identificatorType == typeof(string) && valueType == typeof(int))
-                            equationRight = ((int) equationRight).ToString(CultureInfo.InvariantCulture);
-                        else throw new Exception($"Trying to approptiate '{valueType}' to '{identificatorType}'");
+                            equationRight = equationRight as float? ?? (int) equationRight;
+                        else if (identificatorType == typeof(string) && (valueType == typeof(float) || valueType == typeof(int)))
+                            equationRight = equationRight.ToString();
+                        else throw new CompilatorException($"Trying to approptiate '{valueType}' to '{identificatorType}'");
                     }
                     Program.Variables[equationLeft] = equationRight;
                     Console.WriteLine($"Eq: {equationLeft} = {equationRight}");
                     break;
                 case "GET":
                     var getName = (string) NamePtrStack.Pop().GetValue();
-                    if (!Program.Variables.ContainsKey(getName)) throw new Exception($"Variable wasn't initialized: {getName}");
+                    if (!Program.Variables.ContainsKey(getName)) throw new CompilatorException($"Variable wasn't initialized: {getName}");
                     var getValue = Program.Variables[getName];
                     ValuePtrStack.Push(Lexems.SaveConstant(getValue));
+                    break;
+                case "UNARYPP":
+                    var unaryPpIdentificator = (string)NamePtrStack.Peek().GetValue();
+                    if (!Program.Variables.ContainsKey(unaryPpIdentificator)) throw new CompilatorException($"Variable wasn't initialized: {unaryPpIdentificator}");
+                    var unaryPpValue = Program.Variables[unaryPpIdentificator];
+                    if (unaryPpValue is int)
+                        Program.Variables[unaryPpIdentificator] = (int) Program.Variables[unaryPpIdentificator] + 1;
+                    else if (unaryPpValue is float)
+                        Program.Variables[unaryPpIdentificator] = (float)Program.Variables[unaryPpIdentificator] + 1;
+                    else throw new CompilatorException("Trying to increase something wrong...");
+                    break;
+                case "UNARYMM":
+                    var unaryMmIdentificator = (string)NamePtrStack.Peek().GetValue();
+                    if (!Program.Variables.ContainsKey(unaryMmIdentificator)) throw new CompilatorException($"Variable wasn't initialized: {unaryMmIdentificator}");
+                    var unaryMmValue = Program.Variables[unaryMmIdentificator];
+                    if (unaryMmValue is int)
+                        Program.Variables[unaryMmIdentificator] = (int)Program.Variables[unaryMmIdentificator] - 1;
+                    else if (unaryMmValue is float)
+                        Program.Variables[unaryMmIdentificator] = (float)Program.Variables[unaryMmIdentificator] - 1;
+                    else throw new CompilatorException("Trying to increase something wrong...");
                     break;
                 case "REMOVE_IDENT":
                     NamePtrStack.Pop();
@@ -217,7 +237,9 @@ namespace Compilator
                     Console.WriteLine($"Stack: {string.Join(",", MainStack.ToArray())}");
                     Console.ReadKey();
                 }
+
                 
+
                 switch (currentStackItemType)
                 {
                     case StackItemType.NonTerminal:
@@ -227,7 +249,7 @@ namespace Compilator
                             if (!GrammarRules.ContainsKey(currentStackItem))
                                 Console.WriteLine($"ERROR: unknown grammar {currentStackItem}");
                             else
-                            Console.WriteLine($"ERROR: unexpected character {charLexemType}, expected symbols: {string.Join(",",GrammarRules[currentStackItem].Keys)}");
+                            Console.WriteLine($"ERROR: unexpected character {charLexemType}, expected symbols: {string.Join(" or ",GrammarRules[currentStackItem].Keys)}");
                             return;
                         }
                         var rule = GrammarRules[currentStackItem][charLexemType];

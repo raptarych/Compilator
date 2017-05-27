@@ -41,14 +41,15 @@ namespace Compilator
                 var syntaticBlock = new SyntacticBlock();
                 syntaticBlock.ProcessInput(lexems);
             }
+            catch (CompilatorException ex)
+            {
+                Console.WriteLine($"Compilator exception: {ex.Message}");
+            }
             catch (Exception ex)
             {
                 Console.WriteLine($"C# exception: {ex.Message}");
                 Console.WriteLine($"StackTrace: {ex.StackTrace}");
             }
-            
-            
-
         }
         static void Main(string[] args)
         {
