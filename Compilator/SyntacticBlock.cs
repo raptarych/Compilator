@@ -248,6 +248,12 @@ namespace Compilator
                 switch (currentStackItemType)
                 {
                     case StackItemType.NonTerminal:
+                        if (currentStackItem.EndsWith("_TRIGGER"))
+                        {
+                            HandleControlChar(currentStackItem);
+                            MainStack.Pop();
+                            continue;
+                        }
                         if (!GrammarRules.ContainsKey(currentStackItem) ||
                             !GrammarRules[currentStackItem].ContainsKey(charLexemType))
                         {
@@ -258,8 +264,6 @@ namespace Compilator
                             return;
                         }
                         var rule = GrammarRules[currentStackItem][charLexemType];
-                        
-                        if (currentStackItem.EndsWith("_TRIGGER")) HandleControlChar(currentStackItem);
 
                         MainStack.Pop();
                         if (rule != Utils.EmptyString) rule.Split(' ').Reverse().ToList().ForEach(ch => MainStack.Push(ch));
