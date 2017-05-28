@@ -154,9 +154,7 @@ namespace Compilator
                     {
                         if (identificatorType == typeof(int) && valueType == typeof(float))
                         {
-                            Console.WriteLine(
-                                $"Warning: appropriating a float value to integer identificator {equationLeft}");
-                            equationRight = Math.Floor((float) equationRight);
+                            throw new CompilatorException("you are not allowed to appropriate float as int");
                         } else if (identificatorType == typeof(float) && valueType == typeof(int))
                             equationRight = equationRight as float? ?? (int) equationRight;
                         else if (identificatorType == typeof(string) && (valueType == typeof(float) || valueType == typeof(int)))
