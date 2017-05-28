@@ -10,6 +10,16 @@ namespace Compilator
     {
         public const char Empty = '$';
         public const string EmptyString = "$";
+
+        public static bool IsTerminal(string sym)
+        {
+            return sym == "c" ||
+                   sym == "v" ||
+                   sym == "k" ||
+                   Lexems.Operations.Contains(sym) ||
+                   Lexems.Keywords.Contains(sym) ||
+                   sym.Length > 0 && Lexems.Separators.Contains(sym[0]);
+        }
     }
 
     public enum LexemCharType

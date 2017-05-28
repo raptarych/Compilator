@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Compilator
@@ -15,6 +16,37 @@ namespace Compilator
         public Stack<Lexem> ValuePtrStack = new Stack<Lexem>();
         public Stack<Lexem> TypeStack = new Stack<Lexem>();
 
+        public void AddRulesRecursively(List<NonTerminal> nonTerminals, NonTerminal startTerminal,
+            NonTerminal currenTerminal = null, Rule ruleOfFirst = null)
+        {
+            var startNonTerminalName = startTerminal.Name;
+            if (currenTerminal == null) currenTerminal = startTerminal;
+            foreach (var rule in currenTerminal.Rules)
+            {
+                if (currenTerminal.Name == startNonTerminalName) ruleOfFirst = rule;
+                var ruleName = rule.Name;
+                var firstSym = new string(ruleName.TakeWhile(ch => ch != ' ').ToArray());
+                while ((firstSym == Utils.EmptyString || firstSym.EndsWith("_TRIGGER")) && !string.IsNullOrEmpty(ruleName))
+                {
+                    ruleName = new string(ruleName.SkipWhile(ch => ch != ' ').Skip(1).ToArray());
+                    firstSym = !string.IsNullOrEmpty(ruleName) ? new string(ruleName.TakeWhile(ch => ch != ' ').ToArray()) : firstSym;
+                }
+                    
+                if (Utils.IsTerminal(firstSym)) ruleOfFirst?.TerminalsSet.Add(firstSym);
+                else
+                {
+                    if (firstSym == startNonTerminalName) continue;
+                    var nextNonTerminal = nonTerminals.FirstOrDefault(nt => nt.Name == firstSym);
+                    if (nextNonTerminal == null)
+                    {
+                        if (firstSym == Utils.EmptyString || firstSym.EndsWith("_TRIGGER")) continue;
+                        throw new CompilatorException($"Non terminal {firstSym} doesn't exist");
+                    }
+                    AddRulesRecursively(nonTerminals, startTerminal, nextNonTerminal, ruleOfFirst);
+                }
+            }
+        }
+
         /// <summary>
         /// Словарь(нетерминал, (входной символ, правило))
         /// </summary>
@@ -24,19 +56,37 @@ namespace Compilator
             var result = new Dictionary<string, Dictionary<string, string>>();
             using (var file = File.OpenText("GrammarRules.dat"))
             {
+                //Реализовать алгоритм вычисления множества выбора - реализовал написанием вспомогательной сущности нетерминала; алгоритм получился двухпроходной
+                var nonTerminals = new List<NonTerminal>();
+
+                //Проход 1 - читаем файл, создаём список всех нетерминалов с правилами
                 while (!file.EndOfStream)
                 {
                     var line = file.ReadLine();
                     if (string.IsNullOrEmpty(line)) continue;
                     if (Program.Debug) Console.WriteLine(line);
-                    
-                    var nonTerminal = new string(line.TakeWhile(ch => ch != '–' && ch != '-').ToArray()).Trim();
-                    var terminals = new string(line.Reverse().TakeWhile(ch => ch != '\t').Reverse().ToArray()).Trim().Split(' ').Select(ch => !string.IsNullOrEmpty(ch) ? ch : Utils.EmptyString).ToList();
-                    var rule = new string(line.SkipWhile(ch => ch != '>').Skip(1).TakeWhile(ch => ch != '\t').ToArray()).Trim();
 
-                    if (!result.ContainsKey(nonTerminal)) result[nonTerminal] = new Dictionary<string, string>();
-                    terminals.ForEach(terminal => result[nonTerminal].Add(terminal.ToString(), rule));
+                    var nonTerminalName = new string(line.TakeWhile(ch => ch != '–' && ch != '-').ToArray()).Trim();
+                    var nonTerminal = nonTerminals.FirstOrDefault(nt => nt.Name == nonTerminalName) ?? new NonTerminal {Name = nonTerminalName};
+                    var rule = new string(line.SkipWhile(ch => ch != '>').Skip(1).ToArray()).Trim();
+                    nonTerminal.Rules.Add(new Rule() {Name = rule});
+                    if (!nonTerminals.Contains(nonTerminal)) nonTerminals.Add(nonTerminal);
+                    //if (!result.ContainsKey(nonTerminal)) result[nonTerminal] = new Dictionary<string, string>();
+                    //terminals.ForEach(terminal => result[nonTerminal].Add(terminal.ToString(), rule));
                 }
+
+                //Проход 2 - теперь, зная все правила в одной связке, можно и сгенерировать им множество выбора; запарился и сделал рекурсивный метод
+                foreach (var nonTerminal in nonTerminals)
+                {
+                    AddRulesRecursively(nonTerminals, nonTerminal);
+
+                    //ну и тут же сконвертируем правила нетерминала в упрощенный формат, с которым и будет работать парсер
+                    result[nonTerminal.Name] = new Dictionary<string, string>();
+                    foreach (var rule in nonTerminal.Rules)
+                        rule.TerminalsSet.ToList().ForEach(terminal => result[nonTerminal.Name].Add(terminal, rule.Name));
+                }
+
+
             }
             return result;
         }

@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompilatorException.cs" />
+    <Compile Include="NonTerminal.cs" />
     <Compile Include="SyntacticBlock.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="ConWorker.cs" />
