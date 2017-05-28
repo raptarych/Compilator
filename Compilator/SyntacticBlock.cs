@@ -98,7 +98,7 @@ namespace Compilator
                         addNew = N1 * N2;
                         break;
                     case "POW":
-                        addNew = Math.Pow(N1, N2);
+                        addNew = (float) Math.Pow(N1, N2);
                         break;
                 }
             }

@@ -1,0 +1,15 @@
+int testInt = 100,a,b,c,z;
+testInt = 100 * 20 + 200;
+testInt = 100 * (20 + 300) - 10;
+testInt = (100 * 20) + 300 + (-10);
+testInt = 10 ^ 2;
+testInt = (100 * 20 ^ 2) + 300 + (-10) * 10;
+float testFloat = 5.25;
+testFloat = testFloat + 5.25;
+testFloat = testFloat / 2 + 3.1416;
+testFloat = testFloat / 2 + 3.1416 ^ 2;
+string testString = "problems";
+testString = "seems like no " + testString;
+testInt++; testInt++; testInt = testInt;
+testInt--; testInt = testInt;
+int perfectEnd = 3 / 0;

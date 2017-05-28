@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,6 +20,14 @@ namespace Compilator
                 Debug = !Debug;
                 Console.WriteLine($"Debug mode is {(Debug ? "on" : "off")}");
                 return;
+            }
+            if (inputString == "test")
+            {
+                inputString = "";
+                using (var testFile = File.OpenText("test.txt"))
+                {
+                    while (!testFile.EndOfStream) inputString += testFile.ReadLine();
+                }
             }
 
             //1. Лексика
