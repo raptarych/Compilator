@@ -74,6 +74,9 @@ namespace Compilator
                     case "MULT":
                         addNew = N1 * N2;
                         break;
+                    case "POW":
+                        addNew = (int) Math.Pow(N1, N2);
+                        break;
                 }
             } else if (N1obj is float || N2obj is float)
             {
@@ -93,6 +96,9 @@ namespace Compilator
                         break;
                     case "MULT":
                         addNew = N1 * N2;
+                        break;
+                    case "POW":
+                        addNew = Math.Pow(N1, N2);
                         break;
                 }
             }
@@ -133,6 +139,7 @@ namespace Compilator
                 case "SUB":
                 case "MULT":
                 case "DIV":
+                case "POW":
                     var addN2 = ValuePtrStack.Pop().GetValue();
                     var addN1 = ValuePtrStack.Pop().GetValue();
                     Arithmetic(addN1, addN2, trigger);
