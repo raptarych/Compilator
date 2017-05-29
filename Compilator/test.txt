@@ -1,5 +1,6 @@
 int testInt = 100,a,b,c,z;
 testInt = 100 * 20 + 200;
+testInt = 100 + 20 * 200;
 testInt = 100 * (20 + 300) - 10;
 testInt = (100 * 20) + 300 + (-10);
 testInt = 10 ^ 2;
