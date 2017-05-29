@@ -1,22 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Compilator
 {
     public class SyntacticBlock
     {
-        public Stack<string> MainStack = new Stack<string>();
-        public Stack<Lexem> NamePtrStack = new Stack<Lexem>();
-        public Stack<Lexem> ValuePtrStack = new Stack<Lexem>();
-        public Stack<Lexem> TypeStack = new Stack<Lexem>();
+        private readonly Stack<string> MainStack = new Stack<string>();
+        private readonly Stack<Lexem> NamePtrStack = new Stack<Lexem>();
+        private readonly Stack<Lexem> ValuePtrStack = new Stack<Lexem>();
+        private readonly Stack<Lexem> TypeStack = new Stack<Lexem>();
 
-        public static void AddRulesRecursively(List<NonTerminal> nonTerminals, NonTerminal startTerminal,
+        private static void AddRulesRecursively(List<NonTerminal> nonTerminals, NonTerminal startTerminal,
             NonTerminal currenTerminal = null, Rule ruleOfFirst = null)
         {
             var startNonTerminalName = startTerminal.Name;
@@ -57,7 +53,7 @@ namespace Compilator
         /// <summary>
         /// Словарь(нетерминал, (входной символ, правило))
         /// </summary>
-        public static Dictionary<string, Dictionary<string, string>> GrammarRules;
+        private static Dictionary<string, Dictionary<string, string>> GrammarRules;
         public static void GetGrammarRules()
         {
             var result = new Dictionary<string, Dictionary<string, string>>();
@@ -78,8 +74,6 @@ namespace Compilator
                     var rule = new string(line.SkipWhile(ch => ch != '>').Skip(1).ToArray()).Trim();
                     nonTerminal.Rules.Add(new Rule() {Name = rule});
                     if (!nonTerminals.Contains(nonTerminal)) nonTerminals.Add(nonTerminal);
-                    //if (!result.ContainsKey(nonTerminal)) result[nonTerminal] = new Dictionary<string, string>();
-                    //terminals.ForEach(terminal => result[nonTerminal].Add(terminal.ToString(), rule));
                 }
 
                 //Проход 2 - теперь, зная все правила в одной связке, можно и сгенерировать им множество выбора; запарился и сделал рекурсивный метод
@@ -98,12 +92,9 @@ namespace Compilator
             GrammarRules = result;
         }
 
-        public void Arithmetic(object val)
-        {
-            if (!Lexems.Constants.Contains(val)) Lexems.Constants.Add(val);
-            ValuePtrStack.Push(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(val) });
-        }
-
+        /// <summary>
+        /// Обработка арифметических операций от управляющих символов
+        /// </summary>
         private void Arithmetic(object N1obj, object N2obj, string type)
         {
             object addNew = null;
@@ -165,6 +156,9 @@ namespace Compilator
             ValuePtrStack.Push(Lexems.SaveConstant(addNew));
         }
 
+        /// <summary>
+        /// Обработка управляющих символов
+        /// </summary>
         private void HandleControlChar(string controlChar)
         {
             var trigger = controlChar.Substring(0, controlChar.Length - 8);
@@ -207,7 +201,8 @@ namespace Compilator
                         if (identificatorType == typeof(int) && valueType == typeof(float))
                         {
                             throw new CompilatorException("you are not allowed to appropriate float as int");
-                        } else if (identificatorType == typeof(float) && valueType == typeof(int))
+                        }
+                        if (identificatorType == typeof(float) && valueType == typeof(int))
                             equationRight = equationRight as float? ?? (int) equationRight;
                         else if (identificatorType == typeof(string) && (valueType == typeof(float) || valueType == typeof(int)))
                             equationRight = equationRight.ToString();
@@ -248,7 +243,10 @@ namespace Compilator
             } 
         }
 
-        public void ProcessInput(List<Lexem> lexems)
+        /// <summary>
+        /// Ввод в МП-автомат цепочки лексем
+        /// </summary>
+        public void ProcessInput(IEnumerable<Lexem> lexems)
         {
             var queue = new Queue<Lexem>(lexems);
             var iterationsNum = 0;
@@ -277,15 +275,7 @@ namespace Compilator
                 }
 
                 var currentStackItem = MainStack.Peek();
-                var currentStackItemType = currentStackItem != "k" 
-                    && currentStackItem != "v" 
-                    && currentStackItem != "c" 
-                    && currentStackItem != Utils.EmptyString
-                    && !Lexems.Identifiers.Contains(currentStackItem) 
-                    && !Lexems.Operations.Contains(currentStackItem)
-                    && !Lexems.Separators.Contains(currentStackItem[0])
-                    ? StackItemType.NonTerminal
-                    : StackItemType.Terminal;
+                var currentStackItemType = Utils.IsTerminal(currentStackItem) ? StackItemType.Terminal : StackItemType.NonTerminal;
 
                 if (Program.Debug)
                 {
@@ -294,8 +284,6 @@ namespace Compilator
                     Console.WriteLine($"Stack: {string.Join(",", MainStack.ToArray())}");
                     Console.ReadKey();
                 }
-
-                
 
                 switch (currentStackItemType)
                 {

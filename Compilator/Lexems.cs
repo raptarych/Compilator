@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace Compilator
 {
@@ -30,7 +26,8 @@ namespace Compilator
         }
 
     }
-    class Lexems
+
+    static class Lexems
     {
         public static readonly List<string> Keywords = new List<string>()
         {
@@ -56,8 +53,8 @@ namespace Compilator
             "--"
         };
 
-        public static List<string> Identifiers = new List<string>();
-        public static List<object> Constants = new List<object>();
+        public static readonly List<string> Identifiers = new List<string>();
+        public static readonly List<object> Constants = new List<object>();
         public static readonly List<char> Separators = new List<char>
         {
             ';',
@@ -73,7 +70,7 @@ namespace Compilator
         public static Lexem SaveConstant(object value)
         {
             if (!Constants.Contains(value)) Constants.Add(value);
-            return new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(value) };
+            return new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte) Constants.IndexOf(value) };
         }
 
     }
