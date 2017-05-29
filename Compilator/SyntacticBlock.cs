@@ -16,7 +16,7 @@ namespace Compilator
         public Stack<Lexem> ValuePtrStack = new Stack<Lexem>();
         public Stack<Lexem> TypeStack = new Stack<Lexem>();
 
-        public void AddRulesRecursively(List<NonTerminal> nonTerminals, NonTerminal startTerminal,
+        public static void AddRulesRecursively(List<NonTerminal> nonTerminals, NonTerminal startTerminal,
             NonTerminal currenTerminal = null, Rule ruleOfFirst = null)
         {
             var startNonTerminalName = startTerminal.Name;
@@ -57,8 +57,8 @@ namespace Compilator
         /// <summary>
         /// Словарь(нетерминал, (входной символ, правило))
         /// </summary>
-        public Dictionary<string, Dictionary<string, string>> GrammarRules;
-        public Dictionary<string, Dictionary<string, string>> GetGrammarRules()
+        public static Dictionary<string, Dictionary<string, string>> GrammarRules;
+        public static void GetGrammarRules()
         {
             var result = new Dictionary<string, Dictionary<string, string>>();
             using (var file = File.OpenText("GrammarRules.dat"))
@@ -95,12 +95,7 @@ namespace Compilator
 
 
             }
-            return result;
-        }
-
-        public SyntacticBlock()
-        {
-            GrammarRules = GetGrammarRules();
+            GrammarRules = result;
         }
 
         public void Arithmetic(object val)

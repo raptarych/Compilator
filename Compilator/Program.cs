@@ -63,6 +63,7 @@ namespace Compilator
         static void Main(string[] args)
         {
             ConWorker conWorker = new ConWorker();
+            SyntacticBlock.GetGrammarRules();
             conWorker.AddHandler(ParseInput);
             conWorker.Start();
         }
