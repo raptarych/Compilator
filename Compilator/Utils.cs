@@ -1,6 +1,6 @@
 ﻿namespace Compilator
 {
-    public class Utils
+    public static class Utils
     {
         public const string EmptyString = "$";
 
