@@ -39,7 +39,14 @@ namespace Compilator
                     var nextNonTerminal = nonTerminals.FirstOrDefault(nt => nt.Name == firstSym);
                     if (nextNonTerminal == null)
                     {
-                        if (firstSym == Utils.EmptyString || firstSym.EndsWith("_TRIGGER")) continue;
+                        if (firstSym.EndsWith("_TRIGGER")) continue;
+                        if (firstSym == Utils.EmptyString)
+                        {
+                            ruleOfFirst?.TerminalsSet.Add(";");
+                            ruleOfFirst?.TerminalsSet.Add(",");
+                            ruleOfFirst?.TerminalsSet.Add(")");
+                            continue;
+                        }
                         throw new CompilatorException($"Non terminal {firstSym} doesn't exist");
                     }
                     AddRulesRecursively(nonTerminals, startTerminal, nextNonTerminal, ruleOfFirst);
