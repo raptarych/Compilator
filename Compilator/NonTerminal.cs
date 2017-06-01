@@ -11,8 +11,8 @@ namespace Compilator
 
     public class Rule
     {
-        public string Name;
+        public string Value;
         public HashSet<string> TerminalsSet = new HashSet<string>();
-        public override string ToString() => Name;
+        public override string ToString() => Value;
     }
 }

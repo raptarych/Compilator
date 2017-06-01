@@ -12,6 +12,19 @@ namespace Compilator
         private readonly Stack<Lexem> ValuePtrStack = new Stack<Lexem>();
         private readonly Stack<Lexem> TypeStack = new Stack<Lexem>();
 
+        private static List<string> AllTerminals = new List<string>();
+
+        private static List<string> GetAllTerminals(List<NonTerminal> nonTerminals)
+        {
+            var result = new List<string>();
+            result = nonTerminals
+                .SelectMany(terminal => terminal.Rules)
+                .Select(rule => rule.Value)
+                .Select(ruleValue => new string(ruleValue.TakeWhile(ch => ch != ' ').ToArray()))
+                .Where(Utils.IsTerminal).Distinct().ToList();
+            return result;
+        }
+
         private static void AddRulesRecursively(List<NonTerminal> nonTerminals, NonTerminal startTerminal,
             NonTerminal currenTerminal = null, Rule ruleOfFirst = null)
         {
@@ -20,7 +33,7 @@ namespace Compilator
             foreach (var rule in currenTerminal.Rules)
             {
                 if (currenTerminal.Name == startNonTerminalName) ruleOfFirst = rule;
-                var ruleName = rule.Name;
+                var ruleName = rule.Value;
                 var firstSym = new string(ruleName.TakeWhile(ch => ch != ' ').ToArray());
                 while ((firstSym == Utils.EmptyString || firstSym.EndsWith("_TRIGGER")) && !string.IsNullOrEmpty(ruleName))
                 {
@@ -38,9 +51,14 @@ namespace Compilator
                         if (firstSym.EndsWith("_TRIGGER")) continue;
                         if (firstSym == Utils.EmptyString)
                         {
-                            ruleOfFirst?.TerminalsSet.Add(";");
-                            ruleOfFirst?.TerminalsSet.Add(",");
-                            ruleOfFirst?.TerminalsSet.Add(")");
+                            var notExistingTerminals = new HashSet<string>();
+                            notExistingTerminals.UnionWith(AllTerminals);
+                            var existingTerminals = new HashSet<string>(currenTerminal.Rules.SelectMany(r => r.TerminalsSet).Distinct());
+                            existingTerminals.UnionWith(startTerminal.Rules.SelectMany(r => r.TerminalsSet).Distinct());
+                            notExistingTerminals.ExceptWith(existingTerminals);
+                            foreach (var terminal in notExistingTerminals)
+                                rule.TerminalsSet.Add(terminal);
+                            
                             continue;
                         }
                         throw new CompilatorException($"Non terminal {firstSym} doesn't exist");
@@ -72,10 +90,10 @@ namespace Compilator
                     var nonTerminalName = new string(line.TakeWhile(ch => ch != '–' && ch != '-').ToArray()).Trim();
                     var nonTerminal = nonTerminals.FirstOrDefault(nt => nt.Name == nonTerminalName) ?? new NonTerminal {Name = nonTerminalName};
                     var rule = new string(line.SkipWhile(ch => ch != '>').Skip(1).ToArray()).Trim();
-                    nonTerminal.Rules.Add(new Rule() {Name = rule});
+                    nonTerminal.Rules.Add(new Rule() {Value = rule});
                     if (!nonTerminals.Contains(nonTerminal)) nonTerminals.Add(nonTerminal);
                 }
-
+                AllTerminals = GetAllTerminals(nonTerminals);
                 //Проход 2 - теперь, зная все правила в одной связке, можно и сгенерировать им множество выбора; запарился и сделал рекурсивный метод
                 foreach (var nonTerminal in nonTerminals)
                 {
@@ -84,7 +102,7 @@ namespace Compilator
                     //ну и тут же сконвертируем правила нетерминала в упрощенный формат, с которым и будет работать парсер
                     result[nonTerminal.Name] = new Dictionary<string, string>();
                     foreach (var rule in nonTerminal.Rules)
-                        rule.TerminalsSet.ToList().ForEach(terminal => result[nonTerminal.Name].Add(terminal, rule.Name));
+                        rule.TerminalsSet.ToList().ForEach(terminal => result[nonTerminal.Name].Add(terminal, rule.Value));
                 }
 
 
