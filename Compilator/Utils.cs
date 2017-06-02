@@ -9,9 +9,9 @@
             return sym == "c" ||
                    sym == "v" ||
                    sym == "k" ||
-                   Lexems.Operations.Contains(sym) ||
-                   Lexems.Keywords.Contains(sym) ||
-                   sym.Length > 0 && Lexems.Separators.Contains(sym[0]);
+                   CommonTables.Operations.Contains(sym) ||
+                   CommonTables.Keywords.Contains(sym) ||
+                   sym.Length > 0 && CommonTables.Separators.Contains(sym[0]);
         }
     }
 

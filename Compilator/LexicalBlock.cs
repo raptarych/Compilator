@@ -15,8 +15,8 @@ namespace Compilator
 
         private LexemCharType GetType(char ch)
         {
-            if (Lexems.Separators.Any(oper => oper == ch)) return LexemCharType.Separators;
-            if (Lexems.Operations.Any(oper => oper.StartsWith(ch.ToString()))) return LexemCharType.Operations;
+            if (CommonTables.Separators.Any(oper => oper == ch)) return LexemCharType.Separators;
+            if (CommonTables.Operations.Any(oper => oper.StartsWith(ch.ToString()))) return LexemCharType.Operations;
             return LexemCharType.Text;
         }
 
@@ -63,8 +63,8 @@ namespace Compilator
                 }
                 CurrentLexem += CurrentChar;
                 if (charType != LexemCharType.Text && 
-                    Lexems.Separators.All(l => l != CurrentLexem[0]) && 
-                    !Lexems.Operations.Any(l => l.StartsWith(CurrentLexem)))
+                    CommonTables.Separators.All(l => l != CurrentLexem[0]) && 
+                    !CommonTables.Operations.Any(l => l.StartsWith(CurrentLexem)))
                 {
                     var lastSym = CurrentLexem.Last();
                     CurrentLexem = CurrentLexem.Substring(0, CurrentLexem.Length - 1);
@@ -88,11 +88,11 @@ namespace Compilator
                     //Константа текстовая
                     var lexem = lexemString;
                     if (lexemString.Contains("\"")) lexem = lexemString.Substring(1, lexemString.Length - 2);
-                    if (!Lexems.Constants.Contains(lexem))
+                    if (!CommonTables.Constants.Contains(lexem))
                     {
-                        Lexems.Constants.Add(lexem);
+                        CommonTables.Constants.Add(lexem);
                     }
-                    lexems.Add(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(lexem) });
+                    lexems.Add(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)CommonTables.Constants.IndexOf(lexem) });
                     continue;
                 }
                 if (firstChar >= '0' && firstChar <= '9' || firstChar == '-' && lexemString.Length > 1 && lexemString[1] != '-')
@@ -109,37 +109,37 @@ namespace Compilator
                         return new List<Lexem>();
                     }
 
-                    if (!Lexems.Constants.Contains(lexem))
+                    if (!CommonTables.Constants.Contains(lexem))
                     {
-                        Lexems.Constants.Add(lexem);
+                        CommonTables.Constants.Add(lexem);
                     }
-                    lexems.Add(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)Lexems.Constants.IndexOf(lexem) });
+                    lexems.Add(new Lexem() { Key = LexemType.CONSTANT, ValuePtr = (byte)CommonTables.Constants.IndexOf(lexem) });
                     continue;
                 }
                 //Разделитель
-                if (lexemString.Length == 1 && Lexems.Separators.Contains(lexemString[0]))
+                if (lexemString.Length == 1 && CommonTables.Separators.Contains(lexemString[0]))
                 {
                     lexems.Add(new Lexem() { Key = LexemType.SEPARATOR, ValuePtr = (byte)lexemString[0] });
                     continue;
                 }
                 //Ключевое слово
-                if (Lexems.Keywords.Contains(lexemString))
+                if (CommonTables.Keywords.Contains(lexemString))
                 {
-                    lexems.Add(new Lexem() { Key = LexemType.KEYWORD, ValuePtr = (byte)Lexems.Keywords.IndexOf(lexemString) });
+                    lexems.Add(new Lexem() { Key = LexemType.KEYWORD, ValuePtr = (byte)CommonTables.Keywords.IndexOf(lexemString) });
                     continue;
                 }
                 //Операция
-                if (Lexems.Operations.Contains(lexemString))
+                if (CommonTables.Operations.Contains(lexemString))
                 {
-                    lexems.Add(new Lexem() { Key = LexemType.OPERATION, ValuePtr = (byte)Lexems.Operations.IndexOf(lexemString) });
+                    lexems.Add(new Lexem() { Key = LexemType.OPERATION, ValuePtr = (byte)CommonTables.Operations.IndexOf(lexemString) });
                     continue;
                 }
                 //Идентификатор (но это не точно)
-                if (!Lexems.Identifiers.Contains(lexemString))
+                if (!CommonTables.Identifiers.Contains(lexemString))
                 {
-                    Lexems.Identifiers.Add(lexemString);
+                    CommonTables.Identifiers.Add(lexemString);
                 }
-                lexems.Add(new Lexem() { Key = LexemType.IDENTIFIER, ValuePtr = (byte)Lexems.Identifiers.IndexOf(lexemString) });
+                lexems.Add(new Lexem() { Key = LexemType.IDENTIFIER, ValuePtr = (byte)CommonTables.Identifiers.IndexOf(lexemString) });
             }
             return lexems;
         }

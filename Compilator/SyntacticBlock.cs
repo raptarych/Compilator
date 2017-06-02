@@ -7,23 +7,30 @@ namespace Compilator
 {
     public class SyntacticBlock
     {
+        /// <summary>
+        /// Рабочий стек МП-анализатора
+        /// </summary>
         private readonly Stack<string> MainStack = new Stack<string>();
+
+        /// <summary>
+        /// Стек имён (лексем-ссылок)
+        /// </summary>
         private readonly Stack<Lexem> NamePtrStack = new Stack<Lexem>();
+
+        /// <summary>
+        /// Стек значений (лексем-ссылок)
+        /// </summary>
         private readonly Stack<Lexem> ValuePtrStack = new Stack<Lexem>();
+
+        /// <summary>
+        /// Стек ключевых слов (лексем-ссылок)
+        /// </summary>
         private readonly Stack<Lexem> TypeStack = new Stack<Lexem>();
 
-        private static List<string> AllTerminals = new List<string>();
-
-        private static List<string> GetAllTerminals(List<NonTerminal> nonTerminals)
-        {
-            var result = new List<string>();
-            result = nonTerminals
-                .SelectMany(terminal => terminal.Rules)
-                .Select(rule => rule.Value)
-                .Select(ruleValue => new string(ruleValue.TakeWhile(ch => ch != ' ').ToArray()))
-                .Where(Utils.IsTerminal).Distinct().ToList();
-            return result;
-        }
+        /// <summary>
+        /// Словарь(нетерминал, (входной символ, правило))
+        /// </summary>
+        private static Dictionary<string, Dictionary<string, string>> GrammarRules;
 
         private static void AddRulesRecursively(List<NonTerminal> nonTerminals, NonTerminal startTerminal,
             NonTerminal currenTerminal = null, Rule ruleOfFirst = null)
@@ -49,16 +56,11 @@ namespace Compilator
                     if (nextNonTerminal == null)
                     {
                         if (firstSym.EndsWith("_TRIGGER")) continue;
-                        if (firstSym == Utils.EmptyString)
+                        if (firstSym == Utils.EmptyString)      //осознанный костыль - не придумал пока что как задать множество выбора для пустых правил
                         {
-                            var notExistingTerminals = new HashSet<string>();
-                            notExistingTerminals.UnionWith(AllTerminals);
-                            var existingTerminals = new HashSet<string>(currenTerminal.Rules.SelectMany(r => r.TerminalsSet).Distinct());
-                            existingTerminals.UnionWith(startTerminal.Rules.SelectMany(r => r.TerminalsSet).Distinct());
-                            notExistingTerminals.ExceptWith(existingTerminals);
-                            foreach (var terminal in notExistingTerminals)
-                                rule.TerminalsSet.Add(terminal);
-                            
+                            ruleOfFirst?.TerminalsSet.Add(";");
+                            ruleOfFirst?.TerminalsSet.Add(",");
+                            ruleOfFirst?.TerminalsSet.Add(")");
                             continue;
                         }
                         throw new CompilatorException($"Non terminal {firstSym} doesn't exist");
@@ -68,10 +70,6 @@ namespace Compilator
             }
         }
 
-        /// <summary>
-        /// Словарь(нетерминал, (входной символ, правило))
-        /// </summary>
-        private static Dictionary<string, Dictionary<string, string>> GrammarRules;
         public static void GetGrammarRules()
         {
             var result = new Dictionary<string, Dictionary<string, string>>();
@@ -93,7 +91,7 @@ namespace Compilator
                     nonTerminal.Rules.Add(new Rule() {Value = rule});
                     if (!nonTerminals.Contains(nonTerminal)) nonTerminals.Add(nonTerminal);
                 }
-                AllTerminals = GetAllTerminals(nonTerminals);
+
                 //Проход 2 - теперь, зная все правила в одной связке, можно и сгенерировать им множество выбора; запарился и сделал рекурсивный метод
                 foreach (var nonTerminal in nonTerminals)
                 {
@@ -171,7 +169,22 @@ namespace Compilator
                     addNew = N1 + N2;
                 else throw new CompilatorException($"Operation {type} for string types is not currently available, please do not shot at your leg");
             }
-            ValuePtrStack.Push(Lexems.SaveConstant(addNew));
+            ValuePtrStack.Push(CommonTables.SaveConstant(addNew));
+        }
+
+        /// <summary>
+        /// Обработка унарных арифметических операций от управляющих символов
+        /// </summary>
+        private void UnaryOperation(string trigger)
+        {
+            var unaryPpIdentificator = (string)NamePtrStack.Peek().GetValue();
+            if (!CommonTables.Variables.ContainsKey(unaryPpIdentificator)) throw new CompilatorException($"Variable wasn't initialized: {unaryPpIdentificator}");
+            var unaryPpValue = CommonTables.Variables[unaryPpIdentificator];
+            if (unaryPpValue is int)
+                CommonTables.Variables[unaryPpIdentificator] = (int)CommonTables.Variables[unaryPpIdentificator] + (trigger == "UNARYPP" ? 1 : -1);
+            else if (unaryPpValue is float)
+                CommonTables.Variables[unaryPpIdentificator] = (float)CommonTables.Variables[unaryPpIdentificator] + (trigger == "UNARYPP" ? 1 : -1);
+            else throw new CompilatorException("Trying to increase something wrong...");
         }
 
         /// <summary>
@@ -186,16 +199,19 @@ namespace Compilator
                     var defineVarType = (string) TypeStack.Peek().GetValue();
                     var defineVarName = (string) NamePtrStack.Peek().GetValue();
 
+                    if (CommonTables.Variables.ContainsKey(defineVarName))
+                        throw new CompilatorException($"'{defineVarName}' is already declared");
+
                     switch (defineVarType)
                     {
                         case "int":
-                            Program.Variables[defineVarName] = 0;
+                            CommonTables.Variables[defineVarName] = 0;
                             break;
                         case "float":
-                            Program.Variables[defineVarName] = 0f;
+                            CommonTables.Variables[defineVarName] = 0f;
                             break;
                         case "string":
-                            Program.Variables[defineVarName] = "";
+                            CommonTables.Variables[defineVarName] = "";
                             break;
                     }
                     break;
@@ -211,8 +227,8 @@ namespace Compilator
                 case "EQUATION":
                     var equationLeft = (string) NamePtrStack.Peek().GetValue();
                     var equationRight = ValuePtrStack.Pop().GetValue();
-                    if (!Program.Variables.ContainsKey(equationLeft)) throw new CompilatorException($"Variable wasn't initialized: {equationLeft}");
-                    var identificatorType = Program.Variables[equationLeft].GetType();
+                    if (!CommonTables.Variables.ContainsKey(equationLeft)) throw new CompilatorException($"Variable wasn't initialized: {equationLeft}");
+                    var identificatorType = CommonTables.Variables[equationLeft].GetType();
                     var valueType = equationRight.GetType();
                     if (valueType != identificatorType)
                     {
@@ -226,34 +242,18 @@ namespace Compilator
                             equationRight = equationRight.ToString();
                         else throw new CompilatorException($"Trying to approptiate '{valueType}' to '{identificatorType}'");
                     }
-                    Program.Variables[equationLeft] = equationRight;
+                    CommonTables.Variables[equationLeft] = equationRight;
                     Console.WriteLine($"Eq: {equationLeft} = {equationRight}");
                     break;
                 case "GET":
                     var getName = (string) NamePtrStack.Pop().GetValue();
-                    if (!Program.Variables.ContainsKey(getName)) throw new CompilatorException($"Variable wasn't initialized: {getName}");
-                    var getValue = Program.Variables[getName];
-                    ValuePtrStack.Push(Lexems.SaveConstant(getValue));
+                    if (!CommonTables.Variables.ContainsKey(getName)) throw new CompilatorException($"Variable wasn't initialized: {getName}");
+                    var getValue = CommonTables.Variables[getName];
+                    ValuePtrStack.Push(CommonTables.SaveConstant(getValue));
                     break;
                 case "UNARYPP":
-                    var unaryPpIdentificator = (string)NamePtrStack.Peek().GetValue();
-                    if (!Program.Variables.ContainsKey(unaryPpIdentificator)) throw new CompilatorException($"Variable wasn't initialized: {unaryPpIdentificator}");
-                    var unaryPpValue = Program.Variables[unaryPpIdentificator];
-                    if (unaryPpValue is int)
-                        Program.Variables[unaryPpIdentificator] = (int) Program.Variables[unaryPpIdentificator] + 1;
-                    else if (unaryPpValue is float)
-                        Program.Variables[unaryPpIdentificator] = (float)Program.Variables[unaryPpIdentificator] + 1;
-                    else throw new CompilatorException("Trying to increase something wrong...");
-                    break;
                 case "UNARYMM":
-                    var unaryMmIdentificator = (string)NamePtrStack.Peek().GetValue();
-                    if (!Program.Variables.ContainsKey(unaryMmIdentificator)) throw new CompilatorException($"Variable wasn't initialized: {unaryMmIdentificator}");
-                    var unaryMmValue = Program.Variables[unaryMmIdentificator];
-                    if (unaryMmValue is int)
-                        Program.Variables[unaryMmIdentificator] = (int)Program.Variables[unaryMmIdentificator] - 1;
-                    else if (unaryMmValue is float)
-                        Program.Variables[unaryMmIdentificator] = (float)Program.Variables[unaryMmIdentificator] - 1;
-                    else throw new CompilatorException("Trying to increase something wrong...");
+                    UnaryOperation(trigger);
                     break;
                 case "REMOVE_IDENT":
                     NamePtrStack.Pop();

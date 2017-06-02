@@ -2,6 +2,9 @@
 
 namespace Compilator
 {
+    /// <summary>
+    /// Сущность лексемы; содержит тип лексемы и ссылку на своё значение
+    /// </summary>
     public class Lexem
     {
         public LexemType Key { get; set; }
@@ -12,13 +15,13 @@ namespace Compilator
             switch (Key)
             {
                 case LexemType.CONSTANT:
-                    return Lexems.Constants[ValuePtr];
+                    return CommonTables.Constants[ValuePtr];
                 case LexemType.KEYWORD:
-                    return Lexems.Keywords[ValuePtr];
+                    return CommonTables.Keywords[ValuePtr];
                 case LexemType.IDENTIFIER:
-                    return Lexems.Identifiers[ValuePtr];
+                    return CommonTables.Identifiers[ValuePtr];
                 case LexemType.OPERATION:
-                    return Lexems.Operations[ValuePtr];
+                    return CommonTables.Operations[ValuePtr];
                 default:
                     return (char) ValuePtr;
             }
@@ -27,8 +30,10 @@ namespace Compilator
 
     }
 
-    static class Lexems
+    static class CommonTables
     {
+        public static Dictionary<string, object> Variables = new Dictionary<string, object>();
+
         public static readonly List<string> Keywords = new List<string>()
         {
             "int",
