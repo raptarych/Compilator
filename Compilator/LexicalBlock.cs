@@ -134,7 +134,7 @@ namespace Compilator
                     lexems.Add(new Lexem() { Key = LexemType.OPERATION, ValuePtr = (byte)CommonTables.Operations.IndexOf(lexemString) });
                     continue;
                 }
-                //Идентификатор (но это не точно)
+                //Идентификатор
                 if (!CommonTables.Identifiers.Contains(lexemString))
                 {
                     CommonTables.Identifiers.Add(lexemString);
